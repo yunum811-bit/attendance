@@ -118,15 +118,6 @@ export default function Login({ onLogin }: LoginProps) {
           </button>
         </form>
 
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-          <p className="text-xs text-gray-500 font-medium mb-2">ข้อมูลทดสอบ:</p>
-          <div className="text-xs text-gray-500 space-y-1">
-            <p>EMP001 / 1234 (Admin)</p>
-            <p>EMP002 / 1234 (Manager - ฝ่ายไอที)</p>
-            <p>EMP003 / 1234 (Employee - ฝ่ายไอที)</p>
-            <p>EMP004 / 1234 (Manager - ฝ่ายบัญชี)</p>
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -16,7 +16,7 @@ import settingsRoutes from './routes/settings';
 import notificationRoutes from './routes/notification';
 
 const app = express();
-const PORT = 4000;
+const PORT = parseInt(process.env.PORT || '4000');
 const HTTPS_PORT = 4443;
 
 // Ensure data directory exists

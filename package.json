@@ -6,7 +6,8 @@
     "dev:server": "npx tsx src/server/index.ts",
     "dev:client": "npx vite",
     "build": "npx vite build",
-    "start": "npx vite build && npx tsx src/server/index.ts"
+    "start": "npx tsx src/server/index.ts",
+    "render-build": "npm install && npx vite build"
   },
   "dependencies": {
     "cors": "^2.8.5",

@@ -1,0 +1,178 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --primary: #16a34a;
+  --primary-dark: #15803d;
+  --primary-light: #bbf7d0;
+  --accent: #eab308;
+  --accent-light: #fef9c3;
+}
+
+body {
+  font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+  background: linear-gradient(160deg, #f0fdf4 0%, #fefce8 40%, #f0fdf4 100%);
+  min-height: 100vh;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #1f2937;
+}
+
+/* Safe area for iOS notch */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* PWA install prompt animation */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Better touch targets on mobile */
+@media (max-width: 768px) {
+  button, a, select, input {
+    min-height: 44px;
+  }
+  
+  table {
+    font-size: 0.8rem;
+  }
+  
+  th, td {
+    padding: 0.6rem 0.4rem;
+  }
+}
+
+/* Desktop readability */
+@media (min-width: 769px) {
+  table {
+    font-size: 0.9rem;
+  }
+
+  th, td {
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* Prevent text selection on interactive elements */
+button, a {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Standalone mode adjustments (when installed as PWA) */
+@media (display-mode: standalone) {
+  header {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
+/* Custom gradient header */
+.header-gradient {
+  background: linear-gradient(135deg, #15803d 0%, #16a34a 40%, #65a30d 70%, #ca8a04 100%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Login gradient */
+.login-gradient {
+  background: linear-gradient(135deg, #15803d 0%, #16a34a 30%, #65a30d 60%, #eab308 100%);
+}
+
+/* Card styling */
+.bg-white {
+  border: 1px solid #e5e7eb;
+}
+
+/* Table improvements */
+table thead {
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+table thead th {
+  background-color: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+  color: #374151;
+}
+
+table tbody tr {
+  border-bottom: 1px solid #f3f4f6;
+}
+
+table tbody tr:hover {
+  background-color: #f0fdf4;
+}
+
+/* Button improvements */
+button {
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition: all 0.15s ease;
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* Input improvements */
+input, select, textarea {
+  font-size: 1rem;
+  border-color: #d1d5db;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}
+
+/* Badge/tag improvements */
+span[class*="rounded"][class*="text-xs"] {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}

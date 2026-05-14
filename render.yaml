@@ -2,13 +2,12 @@ services:
   - type: web
     name: attendance-system
     runtime: node
-    buildCommand: npm run render-build
-    startCommand: npm start
+    nodeVersion: "20"
+    buildCommand: npm install && npx vite build
+    startCommand: npx tsx src/server/index.ts
     envVars:
       - key: NODE_ENV
         value: production
-      - key: NODE_OPTIONS
-        value: --import=tsx
     disk:
       name: attendance-data
       mountPath: /opt/render/project/src/data

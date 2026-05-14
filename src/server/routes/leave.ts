@@ -38,25 +38,60 @@ router.post('/request', (req: Request, res: Response) => {
       if (managers.length > 0) {
         // มีหัวหน้าแผนก → แจ้งหัวหน้าแผนก
         managers.forEach((m: any) => {
-          createNotification(m.id, 'leave_request', 'คำขอลาใหม่', msg, '/approval');
+          createNotification(m.id, 'leave_request', 'คำขอลาใหม่ รอการอนุมัติ', msg, '/approval');
         });
       } else {
         // ไม่มีหัวหน้าแผนก → แจ้ง Admin/MD ทุกคน
         const admins = queryAll("SELECT id FROM employees WHERE role IN ('admin','manager_admin','md')");
         admins.forEach((a: any) => {
-          createNotification(a.id, 'leave_request', 'คำขอลาใหม่ (ไม่มีหัวหน้าแผนก)', msg, '/approval');
+          createNotification(a.id, 'leave_request', 'คำขอลาใหม่ รอการอนุมัติ (ไม่มีหัวหน้าแผนก)', msg, '/approval');
         });
       }
     } else if (requester.role === 'manager' || requester.role === 'manager_admin') {
-      // Notify admins
+      // Notify admins/MD
       const admins = queryAll("SELECT id FROM employees WHERE role IN ('admin','manager_admin','md') AND id != ?", [employee_id]);
       admins.forEach((a: any) => {
-        createNotification(a.id, 'leave_request', 'คำขอลาจากหัวหน้าแผนก', msg, '/approval');
+        createNotification(a.id, 'leave_request', 'คำขอลาจากหัวหน้าแผนก รอการอนุมัติ', msg, '/approval');
       });
     }
   }
 
-  res.json({ id: lastId, message: 'ส่งคำขอลาสำเร็จ' });
+  // ส่งข้อความตอบกลับพร้อมบอกว่าส่งไปหาใคร
+  let approverInfo = '';
+  if (requester && requester.role === 'employee') {
+    const managers = queryAll(
+      "SELECT first_name, last_name FROM employees WHERE department_id = ? AND role IN ('manager','manager_admin') AND id != ?",
+      [requester.department_id, employee_id]
+    );
+    if (managers.length > 0) {
+      approverInfo = ` (ส่งถึงหัวหน้าแผนก: ${managers.map((m: any) => m.first_name).join(', ')})`;
+      // แจ้งพนักงานว่าส่งไปหาหัวหน้าแล้ว
+      createNotification(
+        employee_id, 'leave_sent',
+        '📋 ส่งคำขอลาแล้ว',
+        `${leaveType?.name} ${days} วัน (${start_date} ถึง ${end_date}) — รอหัวหน้าแผนก ${managers.map((m: any) => `${m.first_name} ${m.last_name}`).join(', ')} อนุมัติ`,
+        '/leave'
+      );
+    } else {
+      approverInfo = ' (ส่งถึงผู้ดูแลระบบ)';
+      createNotification(
+        employee_id, 'leave_sent',
+        '📋 ส่งคำขอลาแล้ว',
+        `${leaveType?.name} ${days} วัน (${start_date} ถึง ${end_date}) — รอผู้ดูแลระบบอนุมัติ`,
+        '/leave'
+      );
+    }
+  } else if (requester && (requester.role === 'manager' || requester.role === 'manager_admin')) {
+    approverInfo = ' (ส่งถึง MD/ผู้ดูแลระบบ)';
+    createNotification(
+      employee_id, 'leave_sent',
+      '📋 ส่งคำขอลาแล้ว',
+      `${leaveType?.name} ${days} วัน (${start_date} ถึง ${end_date}) — รอ MD/ผู้ดูแลระบบอนุมัติ`,
+      '/leave'
+    );
+  }
+
+  res.json({ id: lastId, message: 'ส่งคำขอลาสำเร็จ' + approverInfo });
 });
 
 // Get leave requests for an employee

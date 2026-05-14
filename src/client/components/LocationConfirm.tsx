@@ -15,6 +15,7 @@ export default function LocationConfirm({ photo, action, onConfirm, onCancel }: 
   const watchIdRef = useRef<number | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mountedRef = useRef(true);
+  const [allowForceConfirm, setAllowForceConfirm] = useState(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -52,6 +53,14 @@ export default function LocationConfirm({ photo, action, onConfirm, onCancel }: 
 
     setLocationStatus('📍 กำลังหาตำแหน่ง...');
     setErrorDetail('');
+    setAllowForceConfirm(false);
+
+    // After 30 seconds, allow force confirm even if accuracy > 50m
+    setTimeout(() => {
+      if (mountedRef.current) {
+        setAllowForceConfirm(true);
+      }
+    }, 30000);
 
     // Strategy: Try getCurrentPosition first (faster), then watchPosition for better accuracy
     // Step 1: Quick position (low accuracy OK)
@@ -62,24 +71,21 @@ export default function LocationConfirm({ photo, action, onConfirm, onCancel }: 
         const loc = { lat: latitude, lng: longitude, accuracy };
         setLocation(loc);
 
-        if (accuracy <= 100) {
-          setLocationStatus(`✅ พบตำแหน่ง (±${Math.round(accuracy)}m)`);
-          // Try to improve with watchPosition
-          improveAccuracy(loc);
+        if (accuracy <= 50) {
+          setLocationStatus(`✅ ตำแหน่งพร้อม (±${Math.round(accuracy)}m)`);
         } else {
-          setLocationStatus(`📍 พบตำแหน่งคร่าวๆ (±${Math.round(accuracy)}m) กำลังปรับ...`);
-          improveAccuracy(loc);
+          setLocationStatus(`📍 ความแม่นยำ ±${Math.round(accuracy)}m (ต้อง ≤ 50m) กำลังปรับ...`);
         }
+        improveAccuracy(loc);
       },
       (err) => {
         if (!mountedRef.current) return;
-        // getCurrentPosition failed, try watchPosition with lower accuracy
         tryWatchFallback(err);
       },
       {
         enableHighAccuracy: true,
         timeout: 10000,
-        maximumAge: 30000, // Accept cached position up to 30 seconds old
+        maximumAge: 5000, // Accept cached only if < 5 seconds old
       }
     );
   };
@@ -87,10 +93,13 @@ export default function LocationConfirm({ photo, action, onConfirm, onCancel }: 
   const improveAccuracy = (initialLoc: { lat: number; lng: number; accuracy: number }) => {
     let bestAccuracy = initialLoc.accuracy;
 
-    // Stop after 10 seconds of improvement
+    // Stop after 25 seconds of improvement
     timeoutRef.current = setTimeout(() => {
       stopWatching();
-    }, 10000);
+      if (mountedRef.current && bestAccuracy > 50) {
+        setLocationStatus(`⚠️ ความแม่นยำ ±${Math.round(bestAccuracy)}m (ไม่ถึง 50m)`);
+      }
+    }, 25000);
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
@@ -101,18 +110,20 @@ export default function LocationConfirm({ photo, action, onConfirm, onCancel }: 
           bestAccuracy = accuracy;
           const loc = { lat: latitude, lng: longitude, accuracy };
           setLocation(loc);
-          setLocationStatus(`✅ ตำแหน่งพร้อม (±${Math.round(accuracy)}m)`);
 
-          if (accuracy <= 30) {
+          if (accuracy <= 50) {
+            setLocationStatus(`✅ ตำแหน่งพร้อม (±${Math.round(accuracy)}m)`);
             // Good enough, stop watching
             stopWatching();
+          } else {
+            setLocationStatus(`📍 ความแม่นยำ ±${Math.round(accuracy)}m (ต้อง ≤ 50m) กำลังปรับ...`);
           }
         }
       },
       () => {
         // Ignore errors during improvement - we already have a position
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
 
@@ -201,7 +212,7 @@ export default function LocationConfirm({ photo, action, onConfirm, onCancel }: 
         {/* Map / Location */}
         <div className="bg-white rounded-lg p-3">
           <p className="text-sm font-medium text-gray-700 mb-2">📍 ตำแหน่งปัจจุบัน</p>
-          <p className={`text-sm mb-2 font-medium ${location ? 'text-green-600' : errorDetail ? 'text-red-600' : 'text-yellow-600'}`}>
+          <p className={`text-sm mb-2 font-medium ${location && location.accuracy <= 50 ? 'text-green-600' : location ? 'text-yellow-600' : errorDetail ? 'text-red-600' : 'text-yellow-600'}`}>
             {locationStatus}
           </p>
 
@@ -235,7 +246,7 @@ export default function LocationConfirm({ photo, action, onConfirm, onCancel }: 
               </div>
               <div className="flex justify-between items-center text-xs text-gray-500 bg-gray-50 rounded p-2">
                 <span>Lat: {location.lat.toFixed(6)}, Lng: {location.lng.toFixed(6)}</span>
-                <span className="text-green-600 font-semibold">±{Math.round(location.accuracy)}m</span>
+                <span className={`font-semibold ${location.accuracy <= 50 ? 'text-green-600' : 'text-red-500'}`}>±{Math.round(location.accuracy)}m {location.accuracy <= 50 ? '✓' : '(ต้อง ≤ 50m)'}</span>
               </div>
             </div>
           ) : !errorDetail ? (
@@ -251,19 +262,41 @@ export default function LocationConfirm({ photo, action, onConfirm, onCancel }: 
       </div>
 
       {/* Confirm buttons */}
-      <div className="bg-black/80 px-4 py-4 flex justify-center items-center gap-4 safe-area-bottom">
-        <button
-          onClick={handleCancel}
-          className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-full text-sm font-medium min-h-[48px]"
-        >
-          ❌ ยกเลิก
-        </button>
-        <button
-          onClick={handleConfirm}
-          className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full text-sm font-medium min-h-[48px]"
-        >
-          ✅ ยืนยัน {action === 'checkin' ? 'Check In' : 'Check Out'}
-        </button>
+      <div className="bg-black/80 px-4 py-4 safe-area-bottom">
+        {/* Accuracy warning */}
+        {location && location.accuracy > 50 && !allowForceConfirm && (
+          <p className="text-center text-yellow-400 text-xs mb-3">
+            ⚠️ ความแม่นยำยังไม่ถึง 50m กรุณารอสักครู่...
+          </p>
+        )}
+        {location && location.accuracy > 50 && allowForceConfirm && (
+          <p className="text-center text-yellow-400 text-xs mb-3">
+            ⚠️ ความแม่นยำ ±{Math.round(location.accuracy)}m (เกิน 50m) — ลองย้ายไปที่โล่งหรือกดลองใหม่
+          </p>
+        )}
+
+        <div className="flex justify-center items-center gap-3">
+          <button
+            onClick={handleCancel}
+            className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-full text-sm font-medium min-h-[48px]"
+          >
+            ❌ ยกเลิก
+          </button>
+          <button
+            onClick={handleRetry}
+            className="bg-yellow-600 hover:bg-yellow-700 text-white px-5 py-3 rounded-full text-sm font-medium min-h-[48px]"
+          >
+            🔄 ลองใหม่
+          </button>
+          {/* ปุ่มยืนยัน: เปิดเมื่อ accuracy ≤ 50m หรือหมดเวลา 30 วินาที */}
+          <button
+            onClick={handleConfirm}
+            disabled={!location || (location.accuracy > 50 && !allowForceConfirm)}
+            className="bg-green-600 hover:bg-green-700 disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-7 py-3 rounded-full text-sm font-medium min-h-[48px]"
+          >
+            ✅ ยืนยัน {action === 'checkin' ? 'Check In' : 'Check Out'}
+          </button>
+        </div>
       </div>
     </div>
   );

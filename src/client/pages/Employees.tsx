@@ -33,6 +33,8 @@ export default function Employees() {
   const [error, setError] = useState('');
   const [passwordModal, setPasswordModal] = useState<{ id: number; name: string } | null>(null);
   const [newPassword, setNewPassword] = useState('');
+  const [editModal, setEditModal] = useState<EmployeeData | null>(null);
+  const [editForm, setEditForm] = useState({ first_name: '', last_name: '', email: '', department_id: '', role: '' });
 
   useEffect(() => {
     fetchEmployees();
@@ -144,6 +146,44 @@ export default function Employees() {
     }
   };
 
+  const startEdit = (emp: EmployeeData) => {
+    setEditModal(emp);
+    setEditForm({
+      first_name: emp.first_name,
+      last_name: emp.last_name,
+      email: emp.email || '',
+      department_id: String(emp.department_id),
+      role: emp.role,
+    });
+  };
+
+  const handleEditSave = async () => {
+    if (!editModal) return;
+    try {
+      const res = await fetch(`/api/employees/${editModal.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          first_name: editForm.first_name,
+          last_name: editForm.last_name,
+          email: editForm.email,
+          department_id: parseInt(editForm.department_id),
+          role: editForm.role,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setMessage(data.message);
+        setEditModal(null);
+        fetchEmployees();
+      } else {
+        setError(data.error);
+      }
+    } catch {
+      setError('เกิดข้อผิดพลาด');
+    }
+  };
+
   const getRoleBadge = (role: string) => {
     const styles: Record<string, string> = {
       md: 'bg-red-100 text-red-700',
@@ -213,6 +253,87 @@ export default function Employees() {
                 className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm"
               >
                 💾 บันทึกรหัสผ่าน
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Employee Modal */}
+      {editModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg">
+            <h3 className="text-lg font-semibold mb-4">✏️ แก้ไขข้อมูลพนักงาน</h3>
+            <p className="text-sm text-gray-500 mb-4">รหัสพนักงาน: <strong>{editModal.employee_code}</strong> (แก้ไขไม่ได้)</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">ชื่อ</label>
+                <input
+                  type="text"
+                  value={editForm.first_name}
+                  onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">นามสกุล</label>
+                <input
+                  type="text"
+                  value={editForm.last_name}
+                  onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">อีเมล</label>
+                <input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">แผนก</label>
+                <select
+                  value={editForm.department_id}
+                  onChange={(e) => setEditForm({ ...editForm, department_id: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg"
+                >
+                  {departments.map((dept) => (
+                    <option key={dept.id} value={dept.id}>{dept.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">บทบาท</label>
+                <select
+                  value={editForm.role}
+                  onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg"
+                >
+                  <option value="employee">พนักงาน</option>
+                  <option value="manager">หัวหน้าแผนก</option>
+                  <option value="manager_admin">หัวหน้าแผนก+ผู้ดูแลระบบ</option>
+                  <option value="admin">ผู้ดูแลระบบ</option>
+                  <option value="md">กรรมการผู้จัดการ (MD)</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setEditModal(null)}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={handleEditSave}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm"
+              >
+                💾 บันทึก
               </button>
             </div>
           </div>
@@ -334,7 +455,7 @@ export default function Employees() {
                 <th className="px-4 py-3 text-left">อีเมล</th>
                 <th className="px-4 py-3 text-left">แผนก</th>
                 <th className="px-4 py-3 text-left">บทบาท</th>
-                <th className="px-4 py-3 text-center">รหัสผ่าน</th>
+                <th className="px-4 py-3 text-center">จัดการ</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -348,13 +469,20 @@ export default function Employees() {
                   <td className="px-4 py-3">{emp.department_name}</td>
                   <td className="px-4 py-3">{getRoleBadge(emp.role)}</td>
                   <td className="px-4 py-3">
-                    <div className="flex justify-center gap-1">
+                    <div className="flex justify-center gap-1 flex-wrap">
+                      <button
+                        onClick={() => startEdit(emp)}
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs"
+                        title="แก้ไขข้อมูล"
+                      >
+                        ✏️ แก้ไข
+                      </button>
                       <button
                         onClick={() => setPasswordModal({ id: emp.id, name: `${emp.first_name} ${emp.last_name}` })}
                         className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
                         title="ตั้งรหัสผ่านใหม่"
                       >
-                        🔑 ตั้งค่า
+                        🔑 รหัสผ่าน
                       </button>
                       <button
                         onClick={() => handleResetPassword(emp)}

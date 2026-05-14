@@ -144,7 +144,7 @@ export default function CheckInOut({ user }: CheckInOutProps) {
       )}
 
       {/* Step 2: Location Confirmation with Map */}
-      {showLocationConfirm && capturedPhoto && (
+      {showLocationConfirm && (
         <LocationConfirm
           photo={capturedPhoto}
           action={cameraAction}

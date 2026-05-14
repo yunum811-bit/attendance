@@ -5,11 +5,7 @@ nixPkgs = ["nodejs_20"]
 cmds = ["npm install"]
 
 [phases.build]
-cmds = ["npx vite build"]
+cmds = ["npm run build"]
 
 [start]
-cmd = "npx tsx src/server/index.ts"
-
-[variables]
-DATA_DIR = "/data"
-UPLOADS_DIR = "/data/uploads"
+cmd = "npm start"

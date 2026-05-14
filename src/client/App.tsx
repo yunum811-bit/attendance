@@ -12,6 +12,7 @@ import Settings from './pages/Settings';
 import ChangePassword from './pages/ChangePassword';
 import Announcements from './pages/Announcements';
 import Calendar from './pages/Calendar';
+import LeaveTypes from './pages/LeaveTypes';
 import Layout from './components/Layout';
 import InstallPrompt from './components/InstallPrompt';
 import { isAdmin, isManagerOrAdmin } from './utils/roles';
@@ -76,6 +77,9 @@ function App() {
           )}
           {isAdmin(user.role) && (
             <Route path="/leave-quotas" element={<LeaveQuotas />} />
+          )}
+          {isAdmin(user.role) && (
+            <Route path="/leave-types" element={<LeaveTypes />} />
           )}
           {isAdmin(user.role) && (
             <Route path="/settings" element={<Settings />} />

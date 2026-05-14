@@ -10,6 +10,48 @@ router.get('/types', (req: Request, res: Response) => {
   res.json(types);
 });
 
+// Create leave type (Admin)
+router.post('/types', (req: Request, res: Response) => {
+  const { name, max_days, description } = req.body;
+  if (!name || !max_days) {
+    return res.status(400).json({ error: 'กรุณาระบุชื่อและจำนวนวัน' });
+  }
+  try {
+    const { lastId } = execute(
+      'INSERT INTO leave_types (name, max_days, description) VALUES (?, ?, ?)',
+      [name, max_days, description || '']
+    );
+    res.json({ id: lastId, message: 'เพิ่มประเภทการลาสำเร็จ' });
+  } catch (err: any) {
+    if (err.message?.includes('UNIQUE')) {
+      return res.status(400).json({ error: 'ชื่อประเภทการลาซ้ำ' });
+    }
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
+  }
+});
+
+// Update leave type (Admin)
+router.put('/types/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { name, max_days, description } = req.body;
+  execute(
+    'UPDATE leave_types SET name = ?, max_days = ?, description = ? WHERE id = ?',
+    [name, max_days, description || '', Number(id)]
+  );
+  res.json({ message: 'แก้ไขประเภทการลาสำเร็จ' });
+});
+
+// Delete leave type (Admin)
+router.delete('/types/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const used = queryOne('SELECT COUNT(*) as count FROM leave_requests WHERE leave_type_id = ?', [Number(id)]);
+  if (used && used.count > 0) {
+    return res.status(400).json({ error: 'ไม่สามารถลบได้ เพราะมีการใช้งานอยู่' });
+  }
+  execute('DELETE FROM leave_types WHERE id = ?', [Number(id)]);
+  res.json({ message: 'ลบประเภทการลาสำเร็จ' });
+});
+
 // Create leave request
 router.post('/request', (req: Request, res: Response) => {
   const { employee_id, leave_type_id, start_date, end_date, days, reason } = req.body;

@@ -48,6 +48,9 @@ export default function Layout({ user, onLogout, children }: LayoutProps) {
       ? [{ path: '/leave-quotas', label: 'กำหนดวันลา', icon: '📅' }]
       : []),
     ...(isAdmin(user.role)
+      ? [{ path: '/leave-types', label: 'ประเภทการลา', icon: '📝' }]
+      : []),
+    ...(isAdmin(user.role)
       ? [{ path: '/settings', label: 'ตั้งค่า', icon: '⚙️' }]
       : []),
     { path: '/change-password', label: 'เปลี่ยนรหัสผ่าน', icon: '🔑' },

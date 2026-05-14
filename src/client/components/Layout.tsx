@@ -36,6 +36,7 @@ export default function Layout({ user, onLogout, children }: LayoutProps) {
     { path: '/checkinout', label: 'Check In/Out', icon: '⏰' },
     { path: '/leave', label: 'ขอลา', icon: '📋' },
     { path: '/announcements', label: 'ประกาศ', icon: '📢' },
+    { path: '/calendar', label: 'ปฏิทิน', icon: '📅' },
     ...(isManagerOrAdmin(user.role)
       ? [{ path: '/approval', label: 'อนุมัติ', icon: '✅' }]
       : []),

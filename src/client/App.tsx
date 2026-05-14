@@ -11,6 +11,7 @@ import LeaveQuotas from './pages/LeaveQuotas';
 import Settings from './pages/Settings';
 import ChangePassword from './pages/ChangePassword';
 import Announcements from './pages/Announcements';
+import Calendar from './pages/Calendar';
 import Layout from './components/Layout';
 import InstallPrompt from './components/InstallPrompt';
 import { isAdmin, isManagerOrAdmin } from './utils/roles';
@@ -81,6 +82,7 @@ function App() {
           )}
           <Route path="/change-password" element={<ChangePassword user={user} />} />
           <Route path="/announcements" element={<Announcements user={user} />} />
+          <Route path="/calendar" element={<Calendar user={user} />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Layout>

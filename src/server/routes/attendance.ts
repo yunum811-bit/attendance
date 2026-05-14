@@ -7,6 +7,14 @@ const router = Router();
 
 const photosDir = path.join(__dirname, '../../../public/uploads/photos');
 
+// Helper: get current date/time in Bangkok timezone
+function getBangkokNow() {
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
+  const date = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+  const time = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
+  return { date, time };
+}
+
 function savePhoto(base64Data: string, employeeId: number, type: 'checkin' | 'checkout'): string {
   if (!fs.existsSync(photosDir)) {
     fs.mkdirSync(photosDir, { recursive: true });
@@ -30,8 +38,7 @@ function savePhoto(base64Data: string, employeeId: number, type: 'checkin' | 'ch
 // Check In
 router.post('/checkin', (req: Request, res: Response) => {
   const { employee_id, photo, location } = req.body;
-  const today = new Date().toISOString().split('T')[0];
-  const now = new Date().toLocaleTimeString('th-TH', { hour12: false });
+  const { date: today, time: now } = getBangkokNow();
 
   // Require photo
   if (!photo) {
@@ -68,8 +75,7 @@ router.post('/checkin', (req: Request, res: Response) => {
 // Check Out
 router.post('/checkout', (req: Request, res: Response) => {
   const { employee_id, photo, location } = req.body;
-  const today = new Date().toISOString().split('T')[0];
-  const now = new Date().toLocaleTimeString('th-TH', { hour12: false });
+  const { date: today, time: now } = getBangkokNow();
 
   // Require photo
   if (!photo) {
@@ -107,7 +113,7 @@ router.post('/checkout', (req: Request, res: Response) => {
 // Get today's attendance for an employee
 router.get('/today/:employeeId', (req: Request, res: Response) => {
   const { employeeId } = req.params;
-  const today = new Date().toISOString().split('T')[0];
+  const { date: today } = getBangkokNow();
 
   const record = queryOne(
     'SELECT * FROM attendance WHERE employee_id = ? AND date = ?',
@@ -144,7 +150,7 @@ router.get('/history/:employeeId', (req: Request, res: Response) => {
 router.get('/department/:departmentId', (req: Request, res: Response) => {
   const { departmentId } = req.params;
   const { date } = req.query;
-  const targetDate = date || new Date().toISOString().split('T')[0];
+  const targetDate = (date as string) || getBangkokNow().date;
 
   const records = queryAll(`
     SELECT a.*, e.first_name, e.last_name, e.employee_code

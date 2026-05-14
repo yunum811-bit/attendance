@@ -1,11 +1,9 @@
 import { Router, Request, Response } from 'express';
-import { queryAll, queryOne, execute } from '../database';
+import { queryAll, queryOne, execute, uploadsDir } from '../database';
 import path from 'path';
 import fs from 'fs';
 
 const router = Router();
-
-const uploadsDir = path.join(__dirname, '../../../public/uploads');
 
 // Get all company settings
 router.get('/', (req: Request, res: Response) => {
@@ -72,7 +70,7 @@ router.post('/logo', (req: Request, res: Response) => {
     // Delete old logo file
     const oldLogo = queryOne("SELECT value FROM company_settings WHERE key = 'company_logo'");
     if (oldLogo?.value) {
-      const oldPath = path.join(uploadsDir, '..', oldLogo.value);
+      const oldPath = path.join(uploadsDir, oldLogo.value.replace('/uploads/', ''));
       if (fs.existsSync(oldPath)) {
         fs.unlinkSync(oldPath);
       }
@@ -89,7 +87,7 @@ router.post('/logo', (req: Request, res: Response) => {
 router.delete('/logo', (req: Request, res: Response) => {
   const existing = queryOne("SELECT value FROM company_settings WHERE key = 'company_logo'");
   if (existing?.value) {
-    const filePath = path.join(uploadsDir, '..', existing.value);
+    const filePath = path.join(uploadsDir, existing.value.replace('/uploads/', ''));
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }

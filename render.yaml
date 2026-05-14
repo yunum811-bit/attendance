@@ -8,7 +8,11 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: DATA_DIR
+        value: /opt/render/project/data
+      - key: UPLOADS_DIR
+        value: /opt/render/project/data/uploads
     disk:
       name: attendance-data
-      mountPath: /opt/render/project/src/data
+      mountPath: /opt/render/project/data
       sizeGB: 1

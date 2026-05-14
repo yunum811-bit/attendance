@@ -4,8 +4,14 @@ import fs from 'fs';
 
 let db: SqlJsDatabase;
 
-const dataDir = path.join(__dirname, '../../data');
+// ใช้ environment variable DATA_DIR สำหรับ persistent storage (Railway/Render)
+// ถ้าไม่มีจะใช้ ./data ตามปกติ
+const dataDir = process.env.DATA_DIR || path.join(__dirname, '../../data');
+const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, '../../public/uploads');
 const dbPath = path.join(dataDir, 'attendance.db');
+
+// Export ให้ไฟล์อื่นใช้
+export { uploadsDir };
 
 export async function initDatabase(): Promise<SqlJsDatabase> {
   if (!fs.existsSync(dataDir)) {

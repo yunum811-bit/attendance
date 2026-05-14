@@ -1,11 +1,11 @@
 import { Router, Request, Response } from 'express';
-import { queryAll, queryOne, execute } from '../database';
+import { queryAll, queryOne, execute, uploadsDir } from '../database';
 import path from 'path';
 import fs from 'fs';
 
 const router = Router();
 
-const photosDir = path.join(__dirname, '../../../public/uploads/photos');
+const photosDir = path.join(uploadsDir, 'photos');
 
 // Helper: get current date/time in Bangkok timezone
 function getBangkokNow() {

@@ -30,7 +30,7 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
 // Serve uploaded files
-const uploadsPath = path.join(__dirname, '../../public/uploads');
+const uploadsPath = process.env.UPLOADS_DIR || path.join(__dirname, '../../public/uploads');
 if (!fs.existsSync(uploadsPath)) {
   fs.mkdirSync(uploadsPath, { recursive: true });
 }

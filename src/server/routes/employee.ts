@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { queryAll, queryOne, execute } from '../database';
+import { queryAll, queryOne, execute, uploadsDir } from '../database';
 import path from 'path';
 import fs from 'fs';
 
@@ -120,7 +120,7 @@ router.put('/:id/avatar', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'ไม่พบรูปภาพ' });
   }
 
-  const uploadsDir = path.join(__dirname, '../../../public/uploads/avatars');
+  const avatarsDir = path.join(uploadsDir, 'avatars');
   if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
   }
@@ -134,7 +134,7 @@ router.put('/:id/avatar', (req: Request, res: Response) => {
   const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
   const data = matches[2];
   const filename = `avatar_${id}_${Date.now()}.${ext}`;
-  const filePath = path.join(uploadsDir, filename);
+  const filePath = path.join(avatarsDir, filename);
 
   // Delete old avatar
   const old = queryOne('SELECT avatar FROM employees WHERE id = ?', [Number(id)]);
@@ -159,7 +159,7 @@ router.delete('/:id/avatar', (req: Request, res: Response) => {
 
   const old = queryOne('SELECT avatar FROM employees WHERE id = ?', [Number(id)]);
   if (old?.avatar) {
-    const uploadsDir = path.join(__dirname, '../../../public/uploads/avatars');
+    const avatarsDir = path.join(uploadsDir, 'avatars');
     const oldPath = path.join(uploadsDir, '..', '..', old.avatar);
     if (fs.existsSync(oldPath)) {
       fs.unlinkSync(oldPath);

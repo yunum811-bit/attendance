@@ -9,3 +9,7 @@ cmds = ["npx vite build"]
 
 [start]
 cmd = "npx tsx src/server/index.ts"
+
+[variables]
+DATA_DIR = "/data"
+UPLOADS_DIR = "/data/uploads"

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Employee } from '../App';
+import { formatDate } from '../utils/date';
 
 interface DashboardProps {
   user: Employee;
@@ -144,7 +145,7 @@ export default function Dashboard({ user, onUserUpdate }: DashboardProps) {
                         {leave.leave_type_name} ({leave.days} วัน)
                       </p>
                       <p className="text-xs text-gray-500">
-                        {leave.start_date} ถึง {leave.end_date}
+                        {formatDate(leave.start_date)} ถึง {formatDate(leave.end_date)}
                         {leave.approver_name && ` • โดย ${leave.approver_name}`}
                       </p>
                     </div>

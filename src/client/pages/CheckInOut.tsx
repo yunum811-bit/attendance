@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Employee } from '../App';
 import Camera from '../components/Camera';
 import LocationConfirm from '../components/LocationConfirm';
+import { formatDate } from '../utils/date';
 
 interface CheckInOutProps {
   user: Employee;
@@ -275,7 +276,7 @@ export default function CheckInOut({ user }: CheckInOutProps) {
             <tbody className="divide-y">
               {history.map((record) => (
                 <tr key={record.id} className="hover:bg-gray-50">
-                  <td className="px-3 py-3">{record.date}</td>
+                  <td className="px-3 py-3">{formatDate(record.date)}</td>
                   <td className="px-3 py-3 text-green-600">{record.check_in}</td>
                   <td className="px-3 py-3 text-orange-600">{record.check_out || '-'}</td>
                   <td className="px-3 py-3">

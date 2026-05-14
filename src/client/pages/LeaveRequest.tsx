@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Employee } from '../App';
+import { formatDate } from '../utils/date';
 
 interface LeaveRequestProps {
   user: Employee;
@@ -239,7 +240,7 @@ export default function LeaveRequest({ user }: LeaveRequestProps) {
                 <tr key={req.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">{req.leave_type_name}</td>
                   <td className="px-4 py-3">
-                    {req.start_date} ถึง {req.end_date}
+                    {formatDate(req.start_date)} ถึง {formatDate(req.end_date)}
                   </td>
                   <td className="px-4 py-3">{req.days}</td>
                   <td className="px-4 py-3">{req.reason || '-'}</td>

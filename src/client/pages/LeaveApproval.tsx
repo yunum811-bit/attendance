@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Employee } from '../App';
 import { isAdmin, isManagerOrAdmin, isMD } from '../utils/roles';
+import { formatDate } from '../utils/date';
 
 interface LeaveApprovalProps {
   user: Employee;
@@ -122,7 +123,7 @@ export default function LeaveApproval({ user }: LeaveApprovalProps) {
           )}
           <p className="text-sm text-gray-600 mt-1">
             <span className="font-medium">{req.leave_type_name}</span> |{' '}
-            {req.start_date} ถึง {req.end_date} ({req.days} วัน)
+            {formatDate(req.start_date)} ถึง {formatDate(req.end_date)} ({req.days} วัน)
           </p>
           {req.reason && (
             <p className="text-sm text-gray-500 mt-1">เหตุผล: {req.reason}</p>

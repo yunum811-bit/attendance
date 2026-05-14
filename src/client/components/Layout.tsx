@@ -77,7 +77,7 @@ export default function Layout({ user, onLogout, children }: LayoutProps) {
           <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
             <NotificationBell employeeId={user.id} />
             {user.avatar && (
-              <img src={user.avatar} alt="" className="w-7 h-7 rounded-full object-cover border border-white/50 hidden md:block" />
+              <img src={user.avatar} alt="" className="w-9 h-9 rounded-full object-cover border-2 border-white/50 hidden md:block" />
             )}
             <span className="hidden md:inline text-sm font-medium opacity-90">
               {user.first_name} {user.last_name}

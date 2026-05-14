@@ -15,7 +15,6 @@ export default function LocationConfirm({ photo, action, onConfirm, onCancel }: 
   const watchIdRef = useRef<number | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mountedRef = useRef(true);
-  const [allowForceConfirm, setAllowForceConfirm] = useState(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -53,14 +52,6 @@ export default function LocationConfirm({ photo, action, onConfirm, onCancel }: 
 
     setLocationStatus('📍 กำลังหาตำแหน่ง...');
     setErrorDetail('');
-    setAllowForceConfirm(false);
-
-    // After 30 seconds, allow force confirm even if accuracy > 50m
-    setTimeout(() => {
-      if (mountedRef.current) {
-        setAllowForceConfirm(true);
-      }
-    }, 30000);
 
     // Strategy: Try getCurrentPosition first (faster), then watchPosition for better accuracy
     // Step 1: Quick position (low accuracy OK)
@@ -214,7 +205,7 @@ export default function LocationConfirm({ photo, action, onConfirm, onCancel }: 
         {/* Map / Location */}
         <div className="bg-white rounded-lg p-3">
           <p className="text-sm font-medium text-gray-700 mb-2">📍 ตำแหน่งปัจจุบัน</p>
-          <p className={`text-sm mb-2 font-medium ${location && location.accuracy <= 50 ? 'text-green-600' : location ? 'text-yellow-600' : errorDetail ? 'text-red-600' : 'text-yellow-600'}`}>
+          <p className={`text-sm mb-2 font-medium ${location ? 'text-green-600' : errorDetail ? 'text-red-600' : 'text-yellow-600'}`}>
             {locationStatus}
           </p>
 
@@ -248,7 +239,7 @@ export default function LocationConfirm({ photo, action, onConfirm, onCancel }: 
               </div>
               <div className="flex justify-between items-center text-xs text-gray-500 bg-gray-50 rounded p-2">
                 <span>Lat: {location.lat.toFixed(6)}, Lng: {location.lng.toFixed(6)}</span>
-                <span className={`font-semibold ${location.accuracy <= 50 ? 'text-green-600' : 'text-red-500'}`}>±{Math.round(location.accuracy)}m {location.accuracy <= 50 ? '✓' : '(ต้อง ≤ 50m)'}</span>
+                <span className={`font-semibold ${location.accuracy <= 50 ? 'text-green-600' : 'text-yellow-600'}`}>±{Math.round(location.accuracy)}m</span>
               </div>
             </div>
           ) : !errorDetail ? (
@@ -265,18 +256,6 @@ export default function LocationConfirm({ photo, action, onConfirm, onCancel }: 
 
       {/* Confirm buttons */}
       <div className="bg-black/80 px-4 py-4 safe-area-bottom">
-        {/* Accuracy warning */}
-        {location && location.accuracy > 50 && !allowForceConfirm && (
-          <p className="text-center text-yellow-400 text-xs mb-3">
-            ⚠️ ความแม่นยำยังไม่ถึง 50m กรุณารอสักครู่...
-          </p>
-        )}
-        {location && location.accuracy > 50 && allowForceConfirm && (
-          <p className="text-center text-yellow-400 text-xs mb-3">
-            ⚠️ ความแม่นยำ ±{Math.round(location.accuracy)}m (เกิน 50m) — ลองย้ายไปที่โล่งหรือกดลองใหม่
-          </p>
-        )}
-
         <div className="flex justify-center items-center gap-3">
           <button
             onClick={handleCancel}
@@ -290,10 +269,9 @@ export default function LocationConfirm({ photo, action, onConfirm, onCancel }: 
           >
             🔄 ลองใหม่
           </button>
-          {/* ปุ่มยืนยัน: เปิดเมื่อ accuracy ≤ 50m หรือหมดเวลา 30 วินาที */}
           <button
             onClick={handleConfirm}
-            disabled={!location || (location.accuracy > 50 && !allowForceConfirm)}
+            disabled={!location}
             className="bg-green-600 hover:bg-green-700 disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-7 py-3 rounded-full text-sm font-medium min-h-[48px]"
           >
             ✅ ยืนยัน {action === 'checkin' ? 'Check In' : 'Check Out'}

@@ -101,6 +101,20 @@ export async function initDatabase(): Promise<SqlJsDatabase> {
   `);
 
   db.run(`
+    CREATE TABLE IF NOT EXISTS announcements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      attachment TEXT,
+      attachment_name TEXT,
+      created_by INTEGER NOT NULL,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (created_by) REFERENCES employees(id)
+    );
+  `);
+
+  db.run(`
     CREATE TABLE IF NOT EXISTS notifications (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       employee_id INTEGER NOT NULL,

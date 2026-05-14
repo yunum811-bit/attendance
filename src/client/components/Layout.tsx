@@ -39,6 +39,7 @@ export default function Layout({ user, onLogout, children }: LayoutProps) {
       ? [{ path: '/approval', label: 'อนุมัติ', icon: '✅' }]
       : []),
     { path: '/reports', label: 'รายงาน', icon: '📊' },
+    { path: '/announcements', label: 'ประกาศ', icon: '📢' },
     ...(isAdmin(user.role)
       ? [{ path: '/employees', label: 'พนักงาน', icon: '👥' }]
       : []),

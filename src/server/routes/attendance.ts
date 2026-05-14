@@ -77,11 +77,6 @@ router.post('/checkout', (req: Request, res: Response) => {
   const { employee_id, photo, location } = req.body;
   const { date: today, time: now } = getBangkokNow();
 
-  // Require photo
-  if (!photo) {
-    return res.status(400).json({ error: 'กรุณาถ่ายรูปก่อน Check Out' });
-  }
-
   const existing = queryOne(
     'SELECT * FROM attendance WHERE employee_id = ? AND date = ?',
     [employee_id, today]
@@ -95,12 +90,14 @@ router.post('/checkout', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'คุณได้ Check Out วันนี้แล้ว' });
   }
 
-  // Save photo
+  // Save photo (optional for checkout)
   let photoUrl = '';
-  try {
-    photoUrl = savePhoto(photo, employee_id, 'checkout');
-  } catch (err: any) {
-    return res.status(400).json({ error: err.message || 'ไม่สามารถบันทึกรูปภาพได้' });
+  if (photo) {
+    try {
+      photoUrl = savePhoto(photo, employee_id, 'checkout');
+    } catch (err: any) {
+      // ไม่ block ถ้ารูปมีปัญหา
+    }
   }
 
   const locationStr = location ? `${location.lat},${location.lng},${location.accuracy || 0}` : '';

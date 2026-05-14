@@ -56,10 +56,17 @@ export default function CheckInOut({ user }: CheckInOutProps) {
     setMessage('');
     setError('');
     setCameraAction(action);
-    setShowCamera(true);
+    if (action === 'checkin') {
+      // Check In: ต้องถ่ายรูป
+      setShowCamera(true);
+    } else {
+      // Check Out: ไม่ต้องถ่ายรูป ไปหน้ายืนยันตำแหน่งเลย
+      setCapturedPhoto(null);
+      setShowLocationConfirm(true);
+    }
   };
 
-  // Step 1: Camera captures photo
+  // Step 1: Camera captures photo (Check In only)
   const handleCameraCapture = (photoData: string) => {
     setShowCamera(false);
     setCapturedPhoto(photoData);
@@ -72,7 +79,7 @@ export default function CheckInOut({ user }: CheckInOutProps) {
   };
 
   // Step 3: User confirms location + photo
-  const handleLocationConfirm = async (photo: string, location: { lat: number; lng: number; accuracy: number } | null) => {
+  const handleLocationConfirm = async (photo: string | null, location: { lat: number; lng: number; accuracy: number } | null) => {
     setShowLocationConfirm(false);
     setCapturedPhoto(null);
     setSubmitting(true);
@@ -85,7 +92,7 @@ export default function CheckInOut({ user }: CheckInOutProps) {
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ employee_id: user.id, photo, location }),
+        body: JSON.stringify({ employee_id: user.id, photo: photo || null, location }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -196,7 +203,7 @@ export default function CheckInOut({ user }: CheckInOutProps) {
             disabled={!todayRecord?.check_in || !!todayRecord?.check_out || submitting}
             className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-5 px-10 rounded-xl text-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
           >
-            📷 Check Out
+            📍 Check Out
           </button>
         </div>
 

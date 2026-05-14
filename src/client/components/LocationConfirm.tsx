@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 
 interface LocationConfirmProps {
-  photo: string;
+  photo: string | null;
   action: 'checkin' | 'checkout';
-  onConfirm: (photo: string, location: { lat: number; lng: number; accuracy: number } | null) => void;
+  onConfirm: (photo: string | null, location: { lat: number; lng: number; accuracy: number } | null) => void;
   onCancel: () => void;
 }
 
@@ -204,10 +204,12 @@ export default function LocationConfirm({ photo, action, onConfirm, onCancel }: 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Photo preview */}
-        <div className="bg-white rounded-lg p-3">
-          <p className="text-sm font-medium text-gray-700 mb-2">📷 รูปถ่าย</p>
-          <img src={photo} alt="Captured" className="w-full max-h-40 object-contain rounded-lg" />
-        </div>
+        {photo && (
+          <div className="bg-white rounded-lg p-3">
+            <p className="text-sm font-medium text-gray-700 mb-2">📷 รูปถ่าย</p>
+            <img src={photo} alt="Captured" className="w-full max-h-40 object-contain rounded-lg" />
+          </div>
+        )}
 
         {/* Map / Location */}
         <div className="bg-white rounded-lg p-3">

@@ -53,109 +53,72 @@ export default function LocationConfirm({ photo, action, onConfirm, onCancel }: 
     setLocationStatus('📍 กำลังหาตำแหน่ง...');
     setErrorDetail('');
 
-    // Strategy: Try getCurrentPosition first (faster), then watchPosition for better accuracy
-    // Step 1: Quick position (low accuracy OK)
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        if (!mountedRef.current) return;
-        const { latitude, longitude, accuracy } = position.coords;
-        const loc = { lat: latitude, lng: longitude, accuracy };
-        setLocation(loc);
+    // ใช้ watchPosition ตั้งแต่แรก เพื่อได้ GPS จริง (ไม่ใช่ WiFi/cached)
+    let bestAccuracy = Infinity;
+    let updateCount = 0;
 
-        if (accuracy <= 50) {
-          setLocationStatus(`✅ ตำแหน่งพร้อม (±${Math.round(accuracy)}m)`);
-        } else {
-          setLocationStatus(`📍 ความแม่นยำ ±${Math.round(accuracy)}m (ต้อง ≤ 50m) กำลังปรับ...`);
-        }
-        improveAccuracy(loc);
-      },
-      (err) => {
-        if (!mountedRef.current) return;
-        tryWatchFallback(err);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 5000, // Accept cached only if < 5 seconds old
-      }
-    );
-  };
-
-  const improveAccuracy = (initialLoc: { lat: number; lng: number; accuracy: number }) => {
-    let bestAccuracy = initialLoc.accuracy;
-
-    // Stop after 25 seconds of improvement
+    // Timeout: หยุดหลัง 20 วินาที
     timeoutRef.current = setTimeout(() => {
-      stopWatching();
-      if (mountedRef.current && bestAccuracy > 50) {
-        setLocationStatus(`⚠️ ความแม่นยำ ±${Math.round(bestAccuracy)}m (ไม่ถึง 50m)`);
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
       }
-    }, 25000);
+      if (!location && mountedRef.current) {
+        setLocationStatus('⚠️ ไม่สามารถหาตำแหน่งได้');
+        setErrorDetail('กรุณาเปิด GPS/Location Services แล้วลองใหม่');
+      }
+    }, 20000);
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
         if (!mountedRef.current) return;
         const { latitude, longitude, accuracy } = position.coords;
+        updateCount++;
 
+        // เอาค่าที่ดีที่สุด (accuracy ต่ำสุด)
         if (accuracy < bestAccuracy) {
           bestAccuracy = accuracy;
           const loc = { lat: latitude, lng: longitude, accuracy };
           setLocation(loc);
 
-          if (accuracy <= 50) {
-            setLocationStatus(`✅ ตำแหน่งพร้อม (±${Math.round(accuracy)}m)`);
-            // Good enough, stop watching
+          if (accuracy <= 30) {
+            setLocationStatus(`✅ ตำแหน่งแม่นยำ (±${Math.round(accuracy)}m)`);
+            // ดีมาก หยุดได้
             stopWatching();
+          } else if (accuracy <= 100) {
+            setLocationStatus(`✅ พบตำแหน่ง (±${Math.round(accuracy)}m)`);
+            // ยังพอรับได้ แต่ยังหาต่อ
           } else {
-            setLocationStatus(`📍 ความแม่นยำ ±${Math.round(accuracy)}m (ต้อง ≤ 50m) กำลังปรับ...`);
+            setLocationStatus(`📍 กำลังปรับตำแหน่ง... (±${Math.round(accuracy)}m)`);
           }
         }
-      },
-      () => {
-        // Ignore errors during improvement - we already have a position
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-    );
-  };
 
-  const tryWatchFallback = (originalError: GeolocationPositionError) => {
-    // Try with enableHighAccuracy: false (uses WiFi/Cell tower)
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        if (!mountedRef.current) return;
-        const { latitude, longitude, accuracy } = position.coords;
-        const loc = { lat: latitude, lng: longitude, accuracy };
-        setLocation(loc);
-        setLocationStatus(`✅ พบตำแหน่ง (±${Math.round(accuracy)}m) — ใช้ WiFi/เครือข่าย`);
+        // หลังได้ 5 ค่าแล้ว หยุดได้ (ใช้ค่าที่ดีที่สุด)
+        if (updateCount >= 5 && bestAccuracy <= 200) {
+          stopWatching();
+        }
       },
       (err) => {
         if (!mountedRef.current) return;
-        // Both methods failed
-        handleLocationError(originalError);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+        if (err.code === 1) {
+          setLocationStatus('❌ ไม่ได้รับอนุญาตเข้าถึงตำแหน่ง');
+          setErrorDetail('กรุณาเปิดการอนุญาต Location ในการตั้งค่าเบราว์เซอร์');
+        } else if (err.code === 2) {
+          setLocationStatus('❌ ไม่สามารถหาตำแหน่งได้');
+          setErrorDetail('กรุณาเปิด GPS/Location Services ในการตั้งค่ามือถือ');
+        } else {
+          setLocationStatus('⏱️ หาตำแหน่งไม่ทัน');
+          setErrorDetail('กรุณาลองใหม่ในที่โล่ง');
+        }
       },
       {
-        enableHighAccuracy: false,
-        timeout: 15000,
-        maximumAge: 60000, // Accept cached up to 1 minute
+        enableHighAccuracy: true,
+        timeout: 20000,
+        maximumAge: 0, // ไม่ใช้ค่า cached เลย — ต้องหาใหม่ทุกครั้ง
       }
     );
-  };
-
-  const handleLocationError = (err: GeolocationPositionError) => {
-    switch (err.code) {
-      case 1: // PERMISSION_DENIED
-        setLocationStatus('❌ ไม่ได้รับอนุญาตเข้าถึงตำแหน่ง');
-        setErrorDetail('กรุณาเปิดการอนุญาต Location ในการตั้งค่าเบราว์เซอร์\n\n• Android Chrome: กดไอคอนแม่กุญแจ → Site settings → Location → Allow\n• iOS Safari: Settings → Safari → Location → Allow');
-        break;
-      case 2: // POSITION_UNAVAILABLE
-        setLocationStatus('❌ ไม่สามารถหาตำแหน่งได้');
-        setErrorDetail('กรุณาตรวจสอบ:\n• เปิด GPS/Location Services ในการตั้งค่ามือถือ\n• อยู่ในที่ที่มีสัญญาณ GPS (กลางแจ้ง)\n• ลองปิด-เปิด GPS แล้วกดลองใหม่');
-        break;
-      case 3: // TIMEOUT
-        setLocationStatus('⏱️ หาตำแหน่งไม่ทันเวลา');
-        setErrorDetail('GPS ใช้เวลานานเกินไป กรุณา:\n• ย้ายไปที่โล่ง/ใกล้หน้าต่าง\n• รอสักครู่แล้วกดลองใหม่');
-        break;
-    }
   };
 
   const handleRetry = () => {

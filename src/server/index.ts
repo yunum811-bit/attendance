@@ -15,6 +15,7 @@ import leaveQuotaRoutes from './routes/leaveQuota';
 import settingsRoutes from './routes/settings';
 import notificationRoutes from './routes/notification';
 import announcementRoutes from './routes/announcement';
+import holidayRoutes from './routes/holiday';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '4000');
@@ -48,6 +49,7 @@ app.use('/api/leave-quotas', leaveQuotaRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/announcements', announcementRoutes);
+app.use('/api/holidays', holidayRoutes);
 
 // Serve static files (built frontend)
 const distPath = path.join(__dirname, '../../dist');

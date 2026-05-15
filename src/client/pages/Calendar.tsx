@@ -51,7 +51,13 @@ const THAI_HOLIDAYS_2025: Record<string, string> = {
   '2025-12-31': 'วันสิ้นปี',
 };
 
-const ALL_HOLIDAYS: Record<string, string> = { ...THAI_HOLIDAYS_2025, ...THAI_HOLIDAYS_2026 };
+const BUILTIN_HOLIDAYS: Record<string, string> = { ...THAI_HOLIDAYS_2025, ...THAI_HOLIDAYS_2026 };
+
+interface CustomHoliday {
+  id: number;
+  date: string;
+  name: string;
+}
 
 interface AttendanceDay {
   date: string;
@@ -70,14 +76,64 @@ export default function Calendar({ user }: CalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [attendance, setAttendance] = useState<AttendanceDay[]>([]);
   const [leaves, setLeaves] = useState<LeaveDay[]>([]);
+  const [customHolidays, setCustomHolidays] = useState<CustomHoliday[]>([]);
+  const [allHolidays, setAllHolidays] = useState<Record<string, string>>(BUILTIN_HOLIDAYS);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [showAddHoliday, setShowAddHoliday] = useState(false);
+  const [holidayForm, setHolidayForm] = useState({ date: '', name: '' });
+  const [editHolidayId, setEditHolidayId] = useState<number | null>(null);
+  const [message, setMessage] = useState('');
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
   useEffect(() => {
     fetchMonthData();
+    fetchCustomHolidays();
   }, [year, month]);
+
+  const fetchCustomHolidays = async () => {
+    const res = await fetch('/api/holidays');
+    const data = await res.json();
+    setCustomHolidays(data);
+    // Merge with built-in holidays
+    const merged = { ...BUILTIN_HOLIDAYS };
+    data.forEach((h: CustomHoliday) => { merged[h.date] = h.name; });
+    setAllHolidays(merged);
+  };
+
+  const handleAddHoliday = async () => {
+    if (!holidayForm.date || !holidayForm.name) return;
+    const url = editHolidayId ? `/api/holidays/${editHolidayId}` : '/api/holidays';
+    const method = editHolidayId ? 'PUT' : 'POST';
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...holidayForm, created_by: user.id }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setMessage(data.message);
+      setShowAddHoliday(false);
+      setHolidayForm({ date: '', name: '' });
+      setEditHolidayId(null);
+      fetchCustomHolidays();
+    } else {
+      setMessage('❌ ' + data.error);
+    }
+  };
+
+  const handleDeleteHoliday = async (id: number) => {
+    if (!confirm('ยืนยันลบวันหยุดนี้?')) return;
+    await fetch(`/api/holidays/${id}`, { method: 'DELETE' });
+    fetchCustomHolidays();
+  };
+
+  const startEditHoliday = (h: CustomHoliday) => {
+    setEditHolidayId(h.id);
+    setHolidayForm({ date: h.date, name: h.name });
+    setShowAddHoliday(true);
+  };
 
   const fetchMonthData = async () => {
     const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
@@ -103,7 +159,7 @@ export default function Calendar({ user }: CalendarProps) {
 
   const formatDateStr = (day: number) => `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
-  const isHoliday = (dateStr: string) => ALL_HOLIDAYS[dateStr];
+  const isHoliday = (dateStr: string) => allHolidays[dateStr];
   const isWeekend = (day: number) => {
     const d = new Date(year, month, day).getDay();
     return d === 0 || d === 6;
@@ -244,22 +300,75 @@ export default function Calendar({ user }: CalendarProps) {
 
       {/* Holidays this month */}
       <div className="bg-white rounded-xl shadow p-4">
-        <h4 className="font-semibold text-gray-800 mb-3">🔴 วันหยุดราชการ เดือน{monthNames[month]}</h4>
+        <div className="flex justify-between items-center mb-3">
+          <h4 className="font-semibold text-gray-800">🔴 วันหยุด เดือน{monthNames[month]}</h4>
+          {isAdmin(user.role) && (
+            <button
+              onClick={() => { setShowAddHoliday(!showAddHoliday); setEditHolidayId(null); setHolidayForm({ date: '', name: '' }); }}
+              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-xs"
+            >
+              {showAddHoliday ? 'ยกเลิก' : '+ เพิ่มวันหยุด'}
+            </button>
+          )}
+        </div>
+
+        {message && <p className="text-sm text-green-600 mb-2">{message}</p>}
+
+        {/* Add/Edit Holiday Form */}
+        {showAddHoliday && isAdmin(user.role) && (
+          <div className="bg-gray-50 rounded-lg p-3 mb-3 space-y-2">
+            <input
+              type="date"
+              value={holidayForm.date}
+              onChange={(e) => setHolidayForm({ ...holidayForm, date: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg text-sm"
+            />
+            <input
+              type="text"
+              value={holidayForm.name}
+              onChange={(e) => setHolidayForm({ ...holidayForm, name: e.target.value })}
+              placeholder="ชื่อวันหยุด เช่น วันหยุดชดเชย"
+              className="w-full px-3 py-2 border rounded-lg text-sm"
+            />
+            <button
+              onClick={handleAddHoliday}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm w-full"
+            >
+              💾 {editHolidayId ? 'บันทึกการแก้ไข' : 'เพิ่มวันหยุด'}
+            </button>
+          </div>
+        )}
+
+        {/* Holiday list */}
         <div className="space-y-2">
-          {Object.entries(ALL_HOLIDAYS)
+          {Object.entries(allHolidays)
             .filter(([date]) => date.startsWith(`${year}-${String(month + 1).padStart(2, '0')}`))
-            .map(([date, name]) => (
-              <div key={date} className="flex justify-between items-center text-sm py-2 border-b border-gray-50">
-                <span className="text-gray-700">{name}</span>
-                <span className="text-red-500 text-xs font-medium">
-                  {parseInt(date.split('-')[2])}/{parseInt(date.split('-')[1])}/{parseInt(date.split('-')[0]) + 543}
-                </span>
-              </div>
-            ))}
-          {Object.entries(ALL_HOLIDAYS)
+            .map(([date, name]) => {
+              const customHoliday = customHolidays.find(h => h.date === date);
+              return (
+                <div key={date} className="flex justify-between items-center text-sm py-2 border-b border-gray-50">
+                  <div>
+                    <span className="text-gray-700">{name}</span>
+                    {customHoliday && <span className="text-xs text-blue-500 ml-2">(กำหนดเอง)</span>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-red-500 text-xs font-medium">
+                      {parseInt(date.split('-')[2])}/{parseInt(date.split('-')[1])}/{parseInt(date.split('-')[0]) + 543}
+                    </span>
+                    {customHoliday && isAdmin(user.role) && (
+                      <div className="flex gap-1">
+                        <button onClick={() => startEditHoliday(customHoliday)} className="text-blue-500 text-xs">✏️</button>
+                        <button onClick={() => handleDeleteHoliday(customHoliday.id)} className="text-red-500 text-xs">🗑️</button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          {Object.entries(allHolidays)
             .filter(([date]) => date.startsWith(`${year}-${String(month + 1).padStart(2, '0')}`))
             .length === 0 && (
-            <p className="text-gray-400 text-sm text-center py-2">ไม่มีวันหยุดราชการในเดือนนี้</p>
+            <p className="text-gray-400 text-sm text-center py-2">ไม่มีวันหยุดในเดือนนี้</p>
           )}
         </div>
       </div>

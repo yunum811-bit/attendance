@@ -204,6 +204,13 @@ export default function LocationConfirm({ photo, action, onConfirm, onCancel }: 
                 <span>Lat: {location.lat.toFixed(6)}, Lng: {location.lng.toFixed(6)}</span>
                 <span className={`font-semibold ${location.accuracy <= 50 ? 'text-green-600' : 'text-yellow-600'}`}>±{Math.round(location.accuracy)}m</span>
               </div>
+              {/* ปุ่มหาตำแหน่งใหม่ */}
+              <button
+                onClick={handleRetry}
+                className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-lg text-sm font-medium"
+              >
+                📍 ตำแหน่งไม่ตรง? กดที่นี่เพื่อหาตำแหน่งใหม่
+              </button>
             </div>
           ) : !errorDetail ? (
             <div className="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center">

@@ -242,21 +242,25 @@ export default function Calendar({ user }: CalendarProps) {
         </div>
       )}
 
-      {/* Upcoming Holidays */}
+      {/* Holidays this month */}
       <div className="bg-white rounded-xl shadow p-4">
-        <h4 className="font-semibold text-gray-800 mb-3">🔴 วันหยุดราชการที่จะถึง</h4>
+        <h4 className="font-semibold text-gray-800 mb-3">🔴 วันหยุดราชการ เดือน{monthNames[month]}</h4>
         <div className="space-y-2">
           {Object.entries(ALL_HOLIDAYS)
-            .filter(([date]) => date >= new Date().toISOString().split('T')[0])
-            .slice(0, 5)
+            .filter(([date]) => date.startsWith(`${year}-${String(month + 1).padStart(2, '0')}`))
             .map(([date, name]) => (
-              <div key={date} className="flex justify-between items-center text-sm py-1 border-b border-gray-50">
+              <div key={date} className="flex justify-between items-center text-sm py-2 border-b border-gray-50">
                 <span className="text-gray-700">{name}</span>
-                <span className="text-gray-500 text-xs">
+                <span className="text-red-500 text-xs font-medium">
                   {parseInt(date.split('-')[2])}/{parseInt(date.split('-')[1])}/{parseInt(date.split('-')[0]) + 543}
                 </span>
               </div>
             ))}
+          {Object.entries(ALL_HOLIDAYS)
+            .filter(([date]) => date.startsWith(`${year}-${String(month + 1).padStart(2, '0')}`))
+            .length === 0 && (
+            <p className="text-gray-400 text-sm text-center py-2">ไม่มีวันหยุดราชการในเดือนนี้</p>
+          )}
         </div>
       </div>
     </div>

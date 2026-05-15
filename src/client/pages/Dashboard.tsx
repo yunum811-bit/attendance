@@ -104,14 +104,15 @@ export default function Dashboard({ user, onUserUpdate }: DashboardProps) {
         {/* Avatar with edit */}
         <label className="relative cursor-pointer group">
           {avatar ? (
-            <img src={avatar} alt="Avatar" className="w-20 h-20 rounded-full object-cover border-3 border-green-300 shadow-lg group-hover:opacity-80 transition" />
+            <img src={avatar} alt="Avatar" className="w-24 h-24 rounded-full object-cover border-4 border-green-400 shadow-lg group-hover:opacity-80 transition" />
           ) : (
-            <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-yellow-400 rounded-full flex items-center justify-center shadow-lg group-hover:opacity-80 transition">
-              <span className="text-3xl">👋</span>
+            <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex flex-col items-center justify-center shadow-lg group-hover:opacity-80 transition border-4 border-dashed border-green-300">
+              <span className="text-2xl">📷</span>
+              <span className="text-[9px] text-gray-500 mt-0.5">เพิ่มรูป</span>
             </div>
           )}
-          <div className="absolute bottom-0 right-0 w-6 h-6 bg-green-600 rounded-full flex items-center justify-center border-2 border-white">
-            <span className="text-xs text-white">📷</span>
+          <div className="absolute bottom-0 right-0 w-7 h-7 bg-green-600 rounded-full flex items-center justify-center border-2 border-white shadow">
+            <span className="text-xs text-white">✏️</span>
           </div>
           <input
             type="file"

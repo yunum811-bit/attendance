@@ -121,8 +121,8 @@ router.put('/:id/avatar', (req: Request, res: Response) => {
   }
 
   const avatarsDir = path.join(uploadsDir, 'avatars');
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
+  if (!fs.existsSync(avatarsDir)) {
+    fs.mkdirSync(avatarsDir, { recursive: true });
   }
 
   // Extract base64
@@ -139,7 +139,7 @@ router.put('/:id/avatar', (req: Request, res: Response) => {
   // Delete old avatar
   const old = queryOne('SELECT avatar FROM employees WHERE id = ?', [Number(id)]);
   if (old?.avatar) {
-    const oldPath = path.join(uploadsDir, '..', '..', old.avatar);
+    const oldPath = path.join(uploadsDir, old.avatar.replace('/uploads/', ''));
     if (fs.existsSync(oldPath)) {
       fs.unlinkSync(oldPath);
     }
@@ -159,8 +159,7 @@ router.delete('/:id/avatar', (req: Request, res: Response) => {
 
   const old = queryOne('SELECT avatar FROM employees WHERE id = ?', [Number(id)]);
   if (old?.avatar) {
-    const avatarsDir = path.join(uploadsDir, 'avatars');
-    const oldPath = path.join(uploadsDir, '..', '..', old.avatar);
+    const oldPath = path.join(uploadsDir, old.avatar.replace('/uploads/', ''));
     if (fs.existsSync(oldPath)) {
       fs.unlinkSync(oldPath);
     }

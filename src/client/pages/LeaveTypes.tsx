@@ -39,7 +39,7 @@ export default function LeaveTypes() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: form.name,
-          max_days: parseInt(form.max_days),
+          max_days: form.max_days ? parseInt(form.max_days) : 0,
           description: form.description,
         }),
       });
@@ -115,10 +115,10 @@ export default function LeaveTypes() {
                   value={form.max_days}
                   onChange={(e) => setForm({ ...form, max_days: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg"
-                  placeholder="เช่น 30"
-                  min="1"
-                  required
+                  placeholder="0 = กำหนดรายบุคคล"
+                  min="0"
                 />
+                <p className="text-xs text-gray-400 mt-1">ใส่ 0 หรือเว้นว่าง = ไปกำหนดที่หน้า "กำหนดวันลา" แทน</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">คำอธิบาย</label>
@@ -155,7 +155,7 @@ export default function LeaveTypes() {
               {types.map((t) => (
                 <tr key={t.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium">{t.name}</td>
-                  <td className="px-4 py-3 text-center">{t.max_days} วัน</td>
+                  <td className="px-4 py-3 text-center">{t.max_days > 0 ? `${t.max_days} วัน` : <span className="text-xs text-blue-500">กำหนดรายบุคคล</span>}</td>
                   <td className="px-4 py-3 text-gray-500">{t.description || '-'}</td>
                   <td className="px-4 py-3">
                     <div className="flex justify-center gap-2">

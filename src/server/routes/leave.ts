@@ -13,13 +13,13 @@ router.get('/types', (req: Request, res: Response) => {
 // Create leave type (Admin)
 router.post('/types', (req: Request, res: Response) => {
   const { name, max_days, description } = req.body;
-  if (!name || !max_days) {
-    return res.status(400).json({ error: 'กรุณาระบุชื่อและจำนวนวัน' });
+  if (!name) {
+    return res.status(400).json({ error: 'กรุณาระบุชื่อประเภทการลา' });
   }
   try {
     const { lastId } = execute(
       'INSERT INTO leave_types (name, max_days, description) VALUES (?, ?, ?)',
-      [name, max_days, description || '']
+      [name, max_days || 0, description || '']
     );
     res.json({ id: lastId, message: 'เพิ่มประเภทการลาสำเร็จ' });
   } catch (err: any) {

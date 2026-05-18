@@ -186,7 +186,7 @@ export default function LeaveRequest({ user }: LeaveRequestProps) {
                   <option value="">-- เลือกประเภท --</option>
                   {leaveTypes.map((type) => (
                     <option key={type.id} value={type.id}>
-                      {type.name} (สูงสุด {type.max_days} วัน)
+                      {type.name}{type.max_days > 0 ? ` (สูงสุด ${type.max_days} วัน)` : ''}
                     </option>
                   ))}
                 </select>

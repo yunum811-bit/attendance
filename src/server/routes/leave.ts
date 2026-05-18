@@ -36,7 +36,7 @@ router.put('/types/:id', (req: Request, res: Response) => {
   const { name, max_days, description } = req.body;
   execute(
     'UPDATE leave_types SET name = ?, max_days = ?, description = ? WHERE id = ?',
-    [name, max_days, description || '', Number(id)]
+    [name, max_days ?? 0, description || '', Number(id)]
   );
   res.json({ message: 'แก้ไขประเภทการลาสำเร็จ' });
 });

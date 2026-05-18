@@ -187,7 +187,8 @@ export default function CheckInOut({ user }: CheckInOutProps) {
 
         {/* Info box */}
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-6 text-sm text-yellow-700">
-          📷 ถ่ายรูป → 📍 ยืนยันตำแหน่งบนแผนที่ → ✅ กดยืนยัน
+          <p>📷 ถ่ายรูป → 📍 ยืนยันตำแหน่งบนแผนที่ → ✅ กดยืนยัน</p>
+          <p className="mt-1 text-xs text-gray-600">🕐 เวลาทำงาน: <strong>08:30 - 17:30 น.</strong> (พักเที่ยง 12:00 - 13:00)</p>
         </div>
 
         <div className="flex flex-col sm:flex-row justify-center gap-4">

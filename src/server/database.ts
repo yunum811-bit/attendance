@@ -166,7 +166,10 @@ export async function initDatabase(): Promise<SqlJsDatabase> {
     // Company settings defaults
     db.run("INSERT OR IGNORE INTO company_settings (key, value) VALUES ('company_name', 'บริษัท ตัวอย่าง จำกัด')");
     db.run("INSERT OR IGNORE INTO company_settings (key, value) VALUES ('company_logo', '')");
-
+    db.run("INSERT OR IGNORE INTO company_settings (key, value) VALUES ('work_start', '08:30')");
+    db.run("INSERT OR IGNORE INTO company_settings (key, value) VALUES ('work_end', '17:30')");
+    db.run("INSERT OR IGNORE INTO company_settings (key, value) VALUES ('break_start', '12:00')");
+    db.run("INSERT OR IGNORE INTO company_settings (key, value) VALUES ('break_end', '13:00')");
     db.run("INSERT INTO departments (name) VALUES ('ฝ่ายบริหาร')");
     db.run("INSERT INTO departments (name) VALUES ('ฝ่ายไอที')");
     db.run("INSERT INTO departments (name) VALUES ('ฝ่ายบัญชี')");

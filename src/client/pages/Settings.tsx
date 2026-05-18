@@ -4,6 +4,10 @@ export default function Settings() {
   const [companyName, setCompanyName] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [logoPreview, setLogoPreview] = useState('');
+  const [workStart, setWorkStart] = useState('08:30');
+  const [workEnd, setWorkEnd] = useState('17:30');
+  const [breakStart, setBreakStart] = useState('12:00');
+  const [breakEnd, setBreakEnd] = useState('13:00');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -20,6 +24,10 @@ export default function Settings() {
       setCompanyName(data.company_name || '');
       setLogoUrl(data.company_logo || '');
       setLogoPreview(data.company_logo || '');
+      setWorkStart(data.work_start || '08:30');
+      setWorkEnd(data.work_end || '17:30');
+      setBreakStart(data.break_start || '12:00');
+      setBreakEnd(data.break_end || '13:00');
     } catch {
       setError('ไม่สามารถโหลดการตั้งค่าได้');
     }
@@ -241,6 +249,66 @@ export default function Settings() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Work Hours */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold mb-4">🕐 เวลาทำงาน</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">เวลาเข้างาน</label>
+            <input
+              type="time"
+              value={workStart}
+              onChange={(e) => setWorkStart(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">เวลาเลิกงาน</label>
+            <input
+              type="time"
+              value={workEnd}
+              onChange={(e) => setWorkEnd(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">พักเที่ยงเริ่ม</label>
+            <input
+              type="time"
+              value={breakStart}
+              onChange={(e) => setBreakStart(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">พักเที่ยงสิ้นสุด</label>
+            <input
+              type="time"
+              value={breakEnd}
+              onChange={(e) => setBreakEnd(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg"
+            />
+          </div>
+        </div>
+        <p className="text-sm text-gray-600 mb-3">
+          ปัจจุบัน: <strong>{workStart} - {workEnd} น.</strong> (พัก {breakStart} - {breakEnd})
+        </p>
+        <button
+          onClick={async () => {
+            setSaving(true); setMessage('');
+            await fetch('/api/settings/work_start', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: workStart }) });
+            await fetch('/api/settings/work_end', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: workEnd }) });
+            await fetch('/api/settings/break_start', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: breakStart }) });
+            await fetch('/api/settings/break_end', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: breakEnd }) });
+            setMessage('บันทึกเวลาทำงานสำเร็จ'); setSaving(false);
+          }}
+          disabled={saving}
+          className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg"
+        >
+          💾 บันทึกเวลาทำงาน
+        </button>
       </div>
     </div>
   );

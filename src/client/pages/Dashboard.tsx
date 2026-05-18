@@ -170,10 +170,11 @@ export default function Dashboard({ user, onUserUpdate }: DashboardProps) {
 
       {/* Today's Status */}
       <div className="bg-white rounded-xl shadow p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
           <span className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">📊</span>
           สถานะวันนี้
         </h3>
+        <p className="text-xs text-gray-500 mb-4">เวลาทำงาน: 08:30 - 17:30 น. (พักเที่ยง 12:00 - 13:00)</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl border border-green-200">
             <p className="text-sm text-green-600 font-medium flex items-center gap-1">⏰ Check In</p>

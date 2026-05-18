@@ -4,6 +4,13 @@ import Camera from '../components/Camera';
 import LocationConfirm from '../components/LocationConfirm';
 import { formatDate } from '../utils/date';
 
+// ตรวจว่ามาสายไหม (เกิน 08:30)
+const isLate = (checkInTime: string): boolean => {
+  if (!checkInTime) return false;
+  const [h, m] = checkInTime.split(':').map(Number);
+  return (h > 8) || (h === 8 && m > 30);
+};
+
 interface CheckInOutProps {
   user: Employee;
 }
@@ -223,7 +230,7 @@ export default function CheckInOut({ user }: CheckInOutProps) {
         {todayRecord && (
           <div className="mt-6 flex flex-col sm:flex-row justify-center gap-6">
             <div className="text-center">
-              <p className="text-sm text-green-600 font-medium mb-1">เข้างาน: <strong>{todayRecord.check_in}</strong></p>
+              <p className={`text-sm font-medium mb-1 ${todayRecord.check_in && isLate(todayRecord.check_in) ? 'text-red-600' : 'text-green-600'}`}>เข้างาน: <strong>{todayRecord.check_in}</strong>{isLate(todayRecord.check_in) && ' (สาย)'}</p>
               {todayRecord.photo_checkin && (
                 <img
                   src={todayRecord.photo_checkin}
@@ -285,7 +292,7 @@ export default function CheckInOut({ user }: CheckInOutProps) {
               {history.map((record) => (
                 <tr key={record.id} className="hover:bg-gray-50">
                   <td className="px-3 py-3">{formatDate(record.date)}</td>
-                  <td className="px-3 py-3 text-green-600">{record.check_in}</td>
+                  <td className={`px-3 py-3 font-medium ${isLate(record.check_in) ? 'text-red-600' : 'text-green-600'}`}>{record.check_in}{isLate(record.check_in) ? ' ⚠️' : ''}</td>
                   <td className="px-3 py-3 text-orange-600">{record.check_out || '-'}</td>
                   <td className="px-3 py-3">
                     <div className="flex justify-center gap-1">

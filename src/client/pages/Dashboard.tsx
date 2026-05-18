@@ -178,8 +178,9 @@ export default function Dashboard({ user, onUserUpdate }: DashboardProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl border border-green-200">
             <p className="text-sm text-green-600 font-medium flex items-center gap-1">⏰ Check In</p>
-            <p className="text-2xl font-bold text-green-700 mt-1">
+            <p className={`text-2xl font-bold mt-1 ${todayAttendance?.check_in && (parseInt(todayAttendance.check_in.split(':')[0]) > 8 || (parseInt(todayAttendance.check_in.split(':')[0]) === 8 && parseInt(todayAttendance.check_in.split(':')[1]) > 30)) ? 'text-red-600' : 'text-green-700'}`}>
               {todayAttendance?.check_in || '-'}
+              {todayAttendance?.check_in && (parseInt(todayAttendance.check_in.split(':')[0]) > 8 || (parseInt(todayAttendance.check_in.split(':')[0]) === 8 && parseInt(todayAttendance.check_in.split(':')[1]) > 30)) && <span className="text-sm ml-1">(สาย)</span>}
             </p>
           </div>
           <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200">

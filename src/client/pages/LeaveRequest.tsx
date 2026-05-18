@@ -36,6 +36,8 @@ export default function LeaveRequest({ user }: LeaveRequestProps) {
     duration_type: 'full_day',
     half_day_period: 'morning',
     hours: '',
+    hour_start: '',
+    hour_end: '',
     reason: '',
   });
   const [message, setMessage] = useState('');
@@ -58,9 +60,19 @@ export default function LeaveRequest({ user }: LeaveRequestProps) {
     setRequests(data);
   };
 
+  const calculateHours = (): number => {
+    if (!form.hour_start || !form.hour_end) return 0;
+    const [sh, sm] = form.hour_start.split(':').map(Number);
+    const [eh, em] = form.hour_end.split(':').map(Number);
+    let diff = (eh * 60 + em) - (sh * 60 + sm);
+    // ลบเวลาพักเที่ยง (12:00-13:00) ถ้าช่วงเวลาคร่อม
+    if (sh < 12 * 60 && eh > 13 * 60) diff -= 60;
+    return Math.max(0, diff / 60);
+  };
+
   const calculateDays = (start: string, end: string): number => {
     if (form.duration_type === 'half_day') return 0.5;
-    if (form.duration_type === 'hourly') return parseFloat(form.hours || '0') / 8;
+    if (form.duration_type === 'hourly') return calculateHours() / 8;
     if (!start || !end) return 0;
     const startDate = new Date(start);
     const endDate = new Date(end);
@@ -78,17 +90,17 @@ export default function LeaveRequest({ user }: LeaveRequestProps) {
       setError('วันที่ไม่ถูกต้อง');
       return;
     }
-    if (form.duration_type === 'hourly' && (!form.hours || parseFloat(form.hours) <= 0)) {
-      setError('กรุณาระบุจำนวนชั่วโมง');
+    if (form.duration_type === 'hourly' && calculateHours() <= 0) {
+      setError('กรุณาเลือกเวลาเริ่มและสิ้นสุดให้ถูกต้อง');
       return;
     }
 
     // Build reason with duration info
     let reasonText = form.reason || '';
     if (form.duration_type === 'half_day') {
-      reasonText = `[ลาครึ่งวัน - ${form.half_day_period === 'morning' ? 'เช้า' : 'บ่าย'}] ${reasonText}`;
+      reasonText = `[ลาครึ่งวัน - ${form.half_day_period === 'morning' ? 'เช้า 08:30-12:00' : 'บ่าย 13:00-17:30'}] ${reasonText}`;
     } else if (form.duration_type === 'hourly') {
-      reasonText = `[ลา ${form.hours} ชั่วโมง] ${reasonText}`;
+      reasonText = `[ลา ${calculateHours()} ชม. (${form.hour_start}-${form.hour_end})] ${reasonText}`;
     }
 
     try {
@@ -113,7 +125,7 @@ export default function LeaveRequest({ user }: LeaveRequestProps) {
 
       setMessage(data.message);
       setShowForm(false);
-      setForm({ leave_type_id: '', start_date: '', end_date: '', duration_type: 'full_day', half_day_period: 'morning', hours: '', reason: '' });
+      setForm({ leave_type_id: '', start_date: '', end_date: '', duration_type: 'full_day', half_day_period: 'morning', hours: '', hour_start: '', hour_end: '', reason: '' });
       fetchMyRequests();
     } catch {
       setError('เกิดข้อผิดพลาด');
@@ -205,30 +217,73 @@ export default function LeaveRequest({ user }: LeaveRequestProps) {
                     onChange={(e) => setForm({ ...form, half_day_period: e.target.value })}
                     className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
                   >
-                    <option value="morning">ครึ่งเช้า (08:00 - 12:00)</option>
-                    <option value="afternoon">ครึ่งบ่าย (13:00 - 17:00)</option>
+                    <option value="morning">ครึ่งเช้า (08:30 - 12:00)</option>
+                    <option value="afternoon">ครึ่งบ่าย (13:00 - 17:30)</option>
                   </select>
                 </div>
               )}
 
-              {/* ลารายชั่วโมง: ระบุจำนวนชั่วโมง */}
+              {/* ลารายชั่วโมง: เลือกเวลาเริ่ม-สิ้นสุด */}
               {form.duration_type === 'hourly' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    จำนวนชั่วโมง
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="7"
-                    step="1"
-                    value={form.hours}
-                    onChange={(e) => setForm({ ...form, hours: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
-                    placeholder="1-7 ชั่วโมง"
-                    required
-                  />
-                </div>
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      เวลาเริ่ม
+                    </label>
+                    <select
+                      value={form.hour_start || ''}
+                      onChange={(e) => setForm({ ...form, hour_start: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                      required
+                    >
+                      <option value="">-- เลือก --</option>
+                      <option value="08:30">08:30</option>
+                      <option value="09:00">09:00</option>
+                      <option value="09:30">09:30</option>
+                      <option value="10:00">10:00</option>
+                      <option value="10:30">10:30</option>
+                      <option value="11:00">11:00</option>
+                      <option value="11:30">11:30</option>
+                      <option value="13:00">13:00</option>
+                      <option value="13:30">13:30</option>
+                      <option value="14:00">14:00</option>
+                      <option value="14:30">14:30</option>
+                      <option value="15:00">15:00</option>
+                      <option value="15:30">15:30</option>
+                      <option value="16:00">16:00</option>
+                      <option value="16:30">16:30</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      เวลาสิ้นสุด
+                    </label>
+                    <select
+                      value={form.hour_end || ''}
+                      onChange={(e) => setForm({ ...form, hour_end: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                      required
+                    >
+                      <option value="">-- เลือก --</option>
+                      <option value="09:00">09:00</option>
+                      <option value="09:30">09:30</option>
+                      <option value="10:00">10:00</option>
+                      <option value="10:30">10:30</option>
+                      <option value="11:00">11:00</option>
+                      <option value="11:30">11:30</option>
+                      <option value="12:00">12:00</option>
+                      <option value="13:30">13:30</option>
+                      <option value="14:00">14:00</option>
+                      <option value="14:30">14:30</option>
+                      <option value="15:00">15:00</option>
+                      <option value="15:30">15:30</option>
+                      <option value="16:00">16:00</option>
+                      <option value="16:30">16:30</option>
+                      <option value="17:00">17:00</option>
+                      <option value="17:30">17:30</option>
+                    </select>
+                  </div>
+                </>
               )}
 
               <div>
@@ -238,8 +293,8 @@ export default function LeaveRequest({ user }: LeaveRequestProps) {
                 <input
                   type="text"
                   value={
-                    form.duration_type === 'half_day' ? '0.5 วัน' :
-                    form.duration_type === 'hourly' ? (form.hours ? `${(parseFloat(form.hours) / 8).toFixed(2)} วัน (${form.hours} ชม.)` : '-') :
+                    form.duration_type === 'half_day' ? '0.5 วัน (4 ชม.)' :
+                    form.duration_type === 'hourly' ? (calculateHours() > 0 ? `${(calculateHours() / 8).toFixed(2)} วัน (${calculateHours()} ชม.)` : '-') :
                     (calculateDays(form.start_date, form.end_date) || '-') + ' วัน'
                   }
                   readOnly

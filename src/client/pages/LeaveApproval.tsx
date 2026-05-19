@@ -26,6 +26,7 @@ interface PendingRequest {
 export default function LeaveApproval({ user }: LeaveApprovalProps) {
   const [employeeRequests, setEmployeeRequests] = useState<PendingRequest[]>([]);
   const [managerRequests, setManagerRequests] = useState<PendingRequest[]>([]);
+  const [approvedRequests, setApprovedRequests] = useState<PendingRequest[]>([]);
   const [rejectReason, setRejectReason] = useState('');
   const [rejectingId, setRejectingId] = useState<number | null>(null);
   const [message, setMessage] = useState('');
@@ -52,6 +53,33 @@ export default function LeaveApproval({ user }: LeaveApprovalProps) {
       const res = await fetch('/api/leave/pending-for-admin');
       const data = await res.json();
       setManagerRequests(data);
+    }
+
+    // Admin: fetch recently approved (for revoke)
+    if (isAdmin(user.role)) {
+      const res = await fetch('/api/leave/recent-approved');
+      const data = await res.json();
+      setApprovedRequests(data);
+    }
+  };
+
+  const handleRevoke = async (id: number) => {
+    if (!confirm('ยืนยันยกเลิกการอนุมัติ? คำขอจะกลับเป็นสถานะ "รออนุมัติ"')) return;
+    try {
+      const res = await fetch(`/api/leave/revoke/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ revoked_by: user.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage('❌ ' + data.error);
+        return;
+      }
+      setMessage('✅ ' + data.message);
+      fetchPending();
+    } catch {
+      setMessage('เกิดข้อผิดพลาด');
     }
   };
 
@@ -242,6 +270,41 @@ export default function LeaveApproval({ user }: LeaveApprovalProps) {
               {managerRequests.map((req) => renderRequestCard(req, true))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Section: Recently Approved (Admin can revoke) */}
+      {isAdmin(user.role) && approvedRequests.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold mb-1">
+            อนุมัติแล้ว (ยกเลิกได้) ({approvedRequests.length})
+          </h3>
+          <p className="text-sm text-gray-500 mb-4">
+            กดปุ่ม "ยกเลิก" เพื่อเปลี่ยนกลับเป็นสถานะรออนุมัติ
+          </p>
+          <div className="space-y-3">
+            {approvedRequests.map((req) => (
+              <div key={req.id} className="flex flex-col sm:flex-row justify-between items-start gap-2 p-3 border rounded-lg bg-green-50">
+                <div>
+                  <p className="font-medium text-gray-800 text-sm">
+                    {req.first_name} {req.last_name} ({req.employee_code})
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    {req.leave_type_name} | {req.start_date} ถึง {req.end_date} ({req.days} วัน)
+                  </p>
+                  {req.department_name && (
+                    <p className="text-xs text-gray-400">แผนก: {req.department_name}</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleRevoke(req.id)}
+                  className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded text-xs whitespace-nowrap"
+                >
+                  ⚠️ ยกเลิกอนุมัติ
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

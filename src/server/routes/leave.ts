@@ -390,6 +390,70 @@ router.put('/reject/:id', (req: Request, res: Response) => {
   res.json({ message: 'ปฏิเสธการลาสำเร็จ' });
 });
 
+// Revoke (ยกเลิกการอนุมัติ) - Admin only
+router.put('/revoke/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { revoked_by } = req.body;
+
+  // Only admin/manager_admin can revoke
+  const revoker = queryOne('SELECT role, first_name, last_name FROM employees WHERE id = ?', [revoked_by]);
+  if (!revoker || !['admin', 'manager_admin'].includes(revoker.role)) {
+    return res.status(403).json({ error: 'เฉพาะ Admin เท่านั้นที่ยกเลิกการอนุมัติได้' });
+  }
+
+  const leaveRequest = queryOne('SELECT * FROM leave_requests WHERE id = ?', [Number(id)]);
+  if (!leaveRequest) {
+    return res.status(404).json({ error: 'ไม่พบคำขอลา' });
+  }
+  if (leaveRequest.status !== 'approved') {
+    return res.status(400).json({ error: 'สามารถยกเลิกได้เฉพาะคำขอที่อนุมัติแล้วเท่านั้น' });
+  }
+
+  // Reset status back to pending
+  execute(`
+    UPDATE leave_requests 
+    SET status = 'pending', approved_by = NULL, approved_at = NULL
+    WHERE id = ?
+  `, [Number(id)]);
+
+  // Notify employee
+  const leaveInfo = queryOne(`
+    SELECT lt.name as leave_type_name, lr.start_date, lr.end_date, lr.days
+    FROM leave_requests lr JOIN leave_types lt ON lr.leave_type_id = lt.id
+    WHERE lr.id = ?
+  `, [Number(id)]);
+
+  if (leaveInfo) {
+    const revokerName = `${revoker.first_name} ${revoker.last_name}`;
+    createNotification(
+      leaveRequest.employee_id,
+      'leave_revoked',
+      '⚠️ การอนุมัติถูกยกเลิก',
+      `${leaveInfo.leave_type_name} ${leaveInfo.days} วัน (${leaveInfo.start_date} ถึง ${leaveInfo.end_date}) ถูกยกเลิกโดย ${revokerName} — กรุณารอการอนุมัติใหม่`,
+      '/leave'
+    );
+  }
+
+  res.json({ message: 'ยกเลิกการอนุมัติสำเร็จ — คำขอกลับเป็นสถานะรออนุมัติ' });
+});
+
+// Get recently approved leave requests (for Admin to revoke)
+router.get('/recent-approved', (req: Request, res: Response) => {
+  const requests = queryAll(`
+    SELECT lr.*, lt.name as leave_type_name,
+           e.first_name, e.last_name, e.employee_code, e.role as requester_role,
+           d.name as department_name
+    FROM leave_requests lr
+    JOIN leave_types lt ON lr.leave_type_id = lt.id
+    JOIN employees e ON lr.employee_id = e.id
+    JOIN departments d ON e.department_id = d.id
+    WHERE lr.status = 'approved'
+    ORDER BY lr.approved_at DESC
+    LIMIT 20
+  `);
+  res.json(requests);
+});
+
 // Get leave summary for an employee (used days per type, respects custom quotas)
 router.get('/summary/:employeeId', (req: Request, res: Response) => {
   const { employeeId } = req.params;

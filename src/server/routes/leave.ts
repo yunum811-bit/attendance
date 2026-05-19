@@ -390,10 +390,10 @@ router.put('/reject/:id', (req: Request, res: Response) => {
   res.json({ message: 'ปฏิเสธการลาสำเร็จ' });
 });
 
-// Revoke (ยกเลิกการอนุมัติ) - Admin only
+// Revoke (ยกเลิกการอนุมัติ) - Admin only → เปลี่ยนเป็น "ยกเลิก" แจ้งพนักงานทันที
 router.put('/revoke/:id', (req: Request, res: Response) => {
   const { id } = req.params;
-  const { revoked_by } = req.body;
+  const { revoked_by, reason } = req.body;
 
   // Only admin/manager_admin can revoke
   const revoker = queryOne('SELECT role, first_name, last_name FROM employees WHERE id = ?', [revoked_by]);
@@ -409,14 +409,15 @@ router.put('/revoke/:id', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'สามารถยกเลิกได้เฉพาะคำขอที่อนุมัติแล้วเท่านั้น' });
   }
 
-  // Reset status back to pending
+  // เปลี่ยนสถานะเป็น "revoked" (ยกเลิก)
+  const rejectReason = reason || 'ยกเลิกการอนุมัติโดย Admin';
   execute(`
     UPDATE leave_requests 
-    SET status = 'pending', approved_by = NULL, approved_at = NULL
+    SET status = 'revoked', reject_reason = ?, approved_by = ?, approved_at = datetime('now')
     WHERE id = ?
-  `, [Number(id)]);
+  `, [rejectReason, revoked_by, Number(id)]);
 
-  // Notify employee
+  // แจ้งเตือนพนักงานทันที
   const leaveInfo = queryOne(`
     SELECT lt.name as leave_type_name, lr.start_date, lr.end_date, lr.days
     FROM leave_requests lr JOIN leave_types lt ON lr.leave_type_id = lt.id
@@ -425,16 +426,17 @@ router.put('/revoke/:id', (req: Request, res: Response) => {
 
   if (leaveInfo) {
     const revokerName = `${revoker.first_name} ${revoker.last_name}`;
+    const reasonText = reason ? ` เหตุผล: ${reason}` : '';
     createNotification(
       leaveRequest.employee_id,
       'leave_revoked',
-      '⚠️ การอนุมัติถูกยกเลิก',
-      `${leaveInfo.leave_type_name} ${leaveInfo.days} วัน (${leaveInfo.start_date} ถึง ${leaveInfo.end_date}) ถูกยกเลิกโดย ${revokerName} — กรุณารอการอนุมัติใหม่`,
+      '⚠️ การลาถูกยกเลิก',
+      `${leaveInfo.leave_type_name} ${leaveInfo.days} วัน (${leaveInfo.start_date} ถึง ${leaveInfo.end_date}) ถูกยกเลิกโดย ${revokerName}${reasonText}`,
       '/leave'
     );
   }
 
-  res.json({ message: 'ยกเลิกการอนุมัติสำเร็จ — คำขอกลับเป็นสถานะรออนุมัติ' });
+  res.json({ message: 'ยกเลิกการอนุมัติสำเร็จ — แจ้งพนักงานแล้ว' });
 });
 
 // Get recently approved leave requests (for Admin to revoke)

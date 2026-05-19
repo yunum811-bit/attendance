@@ -64,12 +64,13 @@ export default function LeaveApproval({ user }: LeaveApprovalProps) {
   };
 
   const handleRevoke = async (id: number) => {
-    if (!confirm('ยืนยันยกเลิกการอนุมัติ? คำขอจะกลับเป็นสถานะ "รออนุมัติ"')) return;
+    const reason = prompt('ระบุเหตุผลที่ยกเลิก (หรือเว้นว่าง):') ?? '';
+    if (reason === null) return; // กด Cancel
     try {
       const res = await fetch(`/api/leave/revoke/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ revoked_by: user.id }),
+        body: JSON.stringify({ revoked_by: user.id, reason }),
       });
       const data = await res.json();
       if (!res.ok) {

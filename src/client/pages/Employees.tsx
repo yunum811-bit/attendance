@@ -146,6 +146,27 @@ export default function Employees() {
     }
   };
 
+  const handleDeleteEmployee = async (emp: EmployeeData) => {
+    if (!confirm(`⚠️ ยืนยันลบพนักงาน "${emp.first_name} ${emp.last_name}" (${emp.employee_code})?\n\nการลบจะไม่สามารถกู้คืนได้!`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/employees/${emp.id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error);
+        return;
+      }
+      setMessage(data.message);
+      fetchEmployees();
+    } catch {
+      setError('เกิดข้อผิดพลาด');
+    }
+  };
+
   const startEdit = (emp: EmployeeData) => {
     setEditModal(emp);
     setEditForm({
@@ -490,6 +511,13 @@ export default function Employees() {
                         title="รีเซ็ตเป็น 1234"
                       >
                         🔄 Reset
+                      </button>
+                      <button
+                        onClick={() => handleDeleteEmployee(emp)}
+                        className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs"
+                        title="ลบพนักงาน"
+                      >
+                        🗑️ ลบ
                       </button>
                     </div>
                   </td>

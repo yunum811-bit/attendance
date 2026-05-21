@@ -169,4 +169,20 @@ router.delete('/:id/avatar', (req: Request, res: Response) => {
   res.json({ message: 'ลบรูปโปรไฟล์สำเร็จ' });
 });
 
+// Delete employee
+router.delete('/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  // ตรวจว่ามีข้อมูลที่เกี่ยวข้องไหม
+  const hasAttendance = queryOne('SELECT COUNT(*) as count FROM attendance WHERE employee_id = ?', [Number(id)]);
+  const hasLeave = queryOne('SELECT COUNT(*) as count FROM leave_requests WHERE employee_id = ?', [Number(id)]);
+
+  if ((hasAttendance && hasAttendance.count > 0) || (hasLeave && hasLeave.count > 0)) {
+    return res.status(400).json({ error: 'ไม่สามารถลบได้ เพราะมีประวัติการเข้างาน/ลาอยู่ ให้เปลี่ยนสถานะแทน' });
+  }
+
+  execute('DELETE FROM employees WHERE id = ?', [Number(id)]);
+  res.json({ message: 'ลบพนักงานสำเร็จ' });
+});
+
 export default router;

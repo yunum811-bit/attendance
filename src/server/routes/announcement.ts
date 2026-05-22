@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { queryAll, queryOne, execute, uploadsDir } from '../database';
+import { createNotification } from './notification';
 import path from 'path';
 import fs from 'fs';
 
@@ -48,6 +49,18 @@ router.post('/', (req: Request, res: Response) => {
     INSERT INTO announcements (title, content, attachment, attachment_name, created_by)
     VALUES (?, ?, ?, ?, ?)
   `, [title, content, attachmentUrl, savedFileName, created_by]);
+
+  // แจ้งเตือนพนักงานทุกคน
+  const allEmployees = queryAll('SELECT id FROM employees WHERE id != ?', [created_by]);
+  allEmployees.forEach((emp: any) => {
+    createNotification(
+      emp.id,
+      'announcement',
+      '📢 ประกาศใหม่: ' + title,
+      content.substring(0, 100) + (content.length > 100 ? '...' : ''),
+      '/announcements'
+    );
+  });
 
   res.json({ id: lastId, message: 'สร้างประกาศสำเร็จ' });
 });

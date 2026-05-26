@@ -14,8 +14,6 @@ export default function Camera({ onCapture, onCancel }: CameraProps) {
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [cameraReady, setCameraReady] = useState(false);
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
-  const [useNativeCapture, setUseNativeCapture] = useState(false);
-  const nativeInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     checkCameraSupport();
@@ -25,8 +23,7 @@ export default function Camera({ onCapture, onCancel }: CameraProps) {
   const checkCameraSupport = async () => {
     // Check if getUserMedia is available
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      // Fallback to native capture (input type=file with capture)
-      setUseNativeCapture(true);
+      setError('เบราว์เซอร์นี้ไม่รองรับกล้อง กรุณาใช้ Chrome หรือ Edge');
       return;
     }
 
@@ -127,9 +124,8 @@ export default function Camera({ onCapture, onCancel }: CameraProps) {
       } else if (err.message === 'Timeout') {
         setError('กล้องใช้เวลานานเกินไป กรุณาลองใหม่');
       } else {
-        // If getUserMedia completely fails, offer native capture
-        setUseNativeCapture(true);
-        return;
+        // Camera failed - show error, no fallback to file picker
+        setError('ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตการเข้าถึงกล้องในการตั้งค่าเบราว์เซอร์');
       }
     }
   };
@@ -190,108 +186,6 @@ export default function Camera({ onCapture, onCancel }: CameraProps) {
     onCancel();
   };
 
-  // Handle native file input capture (fallback for problematic browsers)
-  const handleNativeCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        // Resize if too large
-        const maxSize = 800;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > maxSize || height > maxSize) {
-          if (width > height) {
-            height = (height / width) * maxSize;
-            width = maxSize;
-          } else {
-            width = (width / height) * maxSize;
-            height = maxSize;
-          }
-        }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
-          const photoData = canvas.toDataURL('image/jpeg', 0.7);
-          setCaptured(photoData);
-        }
-      };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const triggerNativeCapture = () => {
-    nativeInputRef.current?.click();
-  };
-
-  // Native capture fallback UI
-  if (useNativeCapture) {
-    return (
-      <div className="fixed inset-0 bg-black z-50 flex flex-col">
-        <div className="bg-black/80 text-white px-4 py-3 flex justify-between items-center">
-          <button onClick={handleCancel} className="text-white text-sm px-3 py-1">
-            ✕ ยกเลิก
-          </button>
-          <span className="text-sm font-medium">📷 ถ่ายรูปยืนยันตัวตน</span>
-          <span className="w-16" />
-        </div>
-
-        <div className="flex-1 flex items-center justify-center bg-black p-6">
-          {captured ? (
-            <img src={captured} alt="Captured" className="max-w-full max-h-full object-contain rounded-lg" />
-          ) : (
-            <div className="text-center">
-              <p className="text-white text-lg mb-6">กดปุ่มด้านล่างเพื่อเปิดกล้องถ่ายรูป</p>
-              <button
-                onClick={triggerNativeCapture}
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-full text-lg font-medium"
-              >
-                📷 เปิดกล้อง
-              </button>
-              {/* Hidden input - capture="user" forces camera, not file picker */}
-              <input
-                ref={nativeInputRef}
-                type="file"
-                accept="image/*"
-                capture="user"
-                onChange={handleNativeCapture}
-                className="hidden"
-              />
-            </div>
-          )}
-        </div>
-
-        <div className="bg-black/80 px-4 py-4 flex justify-center items-center gap-6">
-          {captured ? (
-            <>
-              <button
-                onClick={() => { setCaptured(null); }}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-full text-sm font-medium"
-              >
-                🔄 ถ่ายใหม่
-              </button>
-              <button
-                onClick={() => { if (captured) onCapture(captured); }}
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full text-sm font-medium"
-              >
-                ✅ ใช้รูปนี้
-              </button>
-            </>
-          ) : null}
-        </div>
-      </div>
-    );
-  }
-
   // getUserMedia camera UI
   return (
     <div className="fixed inset-0 bg-black z-50 flex flex-col">
@@ -322,12 +216,6 @@ export default function Camera({ onCapture, onCancel }: CameraProps) {
                 className="bg-green-600 text-white px-4 py-3 rounded-lg"
               >
                 🔄 ลองใหม่
-              </button>
-              <button
-                onClick={() => setUseNativeCapture(true)}
-                className="bg-gray-600 text-white px-4 py-3 rounded-lg text-sm"
-              >
-                📷 ใช้กล้องแบบอื่น
               </button>
             </div>
           </div>

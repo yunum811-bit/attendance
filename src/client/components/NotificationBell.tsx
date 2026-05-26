@@ -125,7 +125,7 @@ export default function NotificationBell({ employeeId }: NotificationBellProps) 
 
       {/* Dropdown */}
       {showDropdown && (
-        <div className="absolute right-0 top-full mt-2 w-80 md:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-hidden flex flex-col">
+        <div className="fixed right-2 left-2 top-14 md:absolute md:right-0 md:left-auto md:top-full md:mt-2 md:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[70vh] md:max-h-96 overflow-hidden flex flex-col">
           {/* Header */}
           <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50">
             <h4 className="font-semibold text-gray-800 text-sm">🔔 การแจ้งเตือน</h4>

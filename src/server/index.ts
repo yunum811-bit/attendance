@@ -16,6 +16,7 @@ import settingsRoutes from './routes/settings';
 import notificationRoutes from './routes/notification';
 import announcementRoutes from './routes/announcement';
 import holidayRoutes from './routes/holiday';
+import forgotCheckinRoutes from './routes/forgotCheckin';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '4000');
@@ -50,6 +51,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/holidays', holidayRoutes);
+app.use('/api/forgot-checkin', forgotCheckinRoutes);
 
 // Serve static files (built frontend)
 const distPath = path.join(__dirname, '../../dist');

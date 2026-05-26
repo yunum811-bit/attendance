@@ -39,6 +39,8 @@ export default function CheckInOut({ user }: CheckInOutProps) {
   const [cameraAction, setCameraAction] = useState<'checkin' | 'checkout'>('checkin');
   const [submitting, setSubmitting] = useState(false);
   const [viewPhoto, setViewPhoto] = useState<string | null>(null);
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotForm, setForgotForm] = useState({ date: '', check_in: '', check_out: '', reason: '' });
 
   useEffect(() => {
     fetchToday();
@@ -214,6 +216,61 @@ export default function CheckInOut({ user }: CheckInOutProps) {
             📍 Check Out
           </button>
         </div>
+
+        {/* Forgot Check In button */}
+        <div className="mt-4 text-center">
+          <button
+            onClick={() => setShowForgot(!showForgot)}
+            className="text-sm text-gray-500 hover:text-green-600 underline"
+          >
+            ⏰ ลืม Check In? กดที่นี่
+          </button>
+        </div>
+
+        {/* Forgot Check In Form */}
+        {showForgot && (
+          <div className="mt-4 bg-gray-50 border rounded-xl p-4 text-left">
+            <h4 className="font-semibold text-gray-800 mb-3">⏰ ขอบันทึกเวลาย้อนหลัง</h4>
+            <p className="text-xs text-gray-500 mb-3">ส่งคำขอไปยังหัวหน้าแผนกเพื่ออนุมัติ</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">วันที่</label>
+                <input type="date" value={forgotForm.date} onChange={(e) => setForgotForm({...forgotForm, date: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" required />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">เวลาเข้างาน</label>
+                <input type="time" value={forgotForm.check_in} onChange={(e) => setForgotForm({...forgotForm, check_in: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" required />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">เวลาออกงาน (ถ้ามี)</label>
+                <input type="time" value={forgotForm.check_out} onChange={(e) => setForgotForm({...forgotForm, check_out: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">เหตุผล</label>
+                <input type="text" value={forgotForm.reason} onChange={(e) => setForgotForm({...forgotForm, reason: e.target.value})} placeholder="เช่น ลืมกดเช็คอิน" className="w-full px-3 py-2 border rounded-lg text-sm" required />
+              </div>
+            </div>
+            <button
+              onClick={async () => {
+                if (!forgotForm.date || !forgotForm.check_in || !forgotForm.reason) { setError('กรุณากรอกข้อมูลให้ครบ'); return; }
+                try {
+                  const res = await fetch('/api/forgot-checkin', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ employee_id: user.id, ...forgotForm }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) { setError(data.error); return; }
+                  setMessage(data.message);
+                  setShowForgot(false);
+                  setForgotForm({ date: '', check_in: '', check_out: '', reason: '' });
+                } catch { setError('เกิดข้อผิดพลาด'); }
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm w-full"
+            >
+              📨 ส่งคำขอ
+            </button>
+          </div>
+        )}
 
         {submitting && (
           <div className="mt-4 text-gray-500">กำลังบันทึก...</div>

@@ -127,6 +127,23 @@ export async function initDatabase(): Promise<SqlJsDatabase> {
   `);
 
   db.run(`
+    CREATE TABLE IF NOT EXISTS forgot_checkin (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      employee_id INTEGER NOT NULL,
+      date TEXT NOT NULL,
+      check_in TEXT NOT NULL,
+      check_out TEXT,
+      reason TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      approved_by INTEGER,
+      approved_at DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (employee_id) REFERENCES employees(id),
+      FOREIGN KEY (approved_by) REFERENCES employees(id)
+    );
+  `);
+
+  db.run(`
     CREATE TABLE IF NOT EXISTS notifications (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       employee_id INTEGER NOT NULL,

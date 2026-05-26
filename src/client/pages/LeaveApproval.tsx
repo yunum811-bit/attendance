@@ -27,6 +27,7 @@ export default function LeaveApproval({ user }: LeaveApprovalProps) {
   const [employeeRequests, setEmployeeRequests] = useState<PendingRequest[]>([]);
   const [managerRequests, setManagerRequests] = useState<PendingRequest[]>([]);
   const [approvedRequests, setApprovedRequests] = useState<PendingRequest[]>([]);
+  const [forgotRequests, setForgotRequests] = useState<any[]>([]);
   const [rejectReason, setRejectReason] = useState('');
   const [rejectingId, setRejectingId] = useState<number | null>(null);
   const [message, setMessage] = useState('');
@@ -60,6 +61,17 @@ export default function LeaveApproval({ user }: LeaveApprovalProps) {
       const res = await fetch('/api/leave/recent-approved');
       const data = await res.json();
       setApprovedRequests(data);
+    }
+
+    // Fetch forgot check-in requests
+    if (isAdmin(user.role) || isMD(user.role)) {
+      const res = await fetch('/api/forgot-checkin/pending-all');
+      const data = await res.json();
+      setForgotRequests(data);
+    } else if (isManagerOrAdmin(user.role)) {
+      const res = await fetch(`/api/forgot-checkin/pending/${user.department_id}`);
+      const data = await res.json();
+      setForgotRequests(data);
     }
   };
 
@@ -303,6 +315,51 @@ export default function LeaveApproval({ user }: LeaveApprovalProps) {
                 >
                   ⚠️ ยกเลิกอนุมัติ
                 </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Section: Forgot Check-In requests */}
+      {forgotRequests.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">
+            ⏰ ลืม Check In — รออนุมัติ ({forgotRequests.length})
+          </h3>
+          <div className="space-y-3">
+            {forgotRequests.map((req: any) => (
+              <div key={req.id} className="border rounded-lg p-4 flex flex-col md:flex-row justify-between items-start gap-3">
+                <div>
+                  <p className="font-medium text-gray-800">{req.first_name} {req.last_name} ({req.employee_code})</p>
+                  <p className="text-sm text-gray-600">วันที่: {req.date} | เข้า: {req.check_in}{req.check_out ? ` | ออก: ${req.check_out}` : ''}</p>
+                  <p className="text-sm text-gray-500">เหตุผล: {req.reason}</p>
+                  {req.department_name && <p className="text-xs text-gray-400">แผนก: {req.department_name}</p>}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      const res = await fetch(`/api/forgot-checkin/approve/${req.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ approved_by: user.id }) });
+                      const data = await res.json();
+                      setMessage(res.ok ? '✅ ' + data.message : '❌ ' + data.error);
+                      fetchPending();
+                    }}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm"
+                  >
+                    ✅ อนุมัติ
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const res = await fetch(`/api/forgot-checkin/reject/${req.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ approved_by: user.id }) });
+                      const data = await res.json();
+                      setMessage(res.ok ? '✅ ' + data.message : '❌ ' + data.error);
+                      fetchPending();
+                    }}
+                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm"
+                  >
+                    ❌ ปฏิเสธ
+                  </button>
+                </div>
               </div>
             ))}
           </div>

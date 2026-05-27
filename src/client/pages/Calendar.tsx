@@ -376,6 +376,7 @@ export default function Calendar({ user }: CalendarProps) {
             .filter(([date]) => date.startsWith(`${year}-${String(month + 1).padStart(2, '0')}`))
             .map(([date, name]) => {
               const customHoliday = customHolidays.find(h => h.date === date);
+              const isBuiltIn = !customHoliday;
               return (
                 <div key={date} className="flex justify-between items-center text-sm py-2 border-b border-gray-50">
                   <div>
@@ -386,10 +387,19 @@ export default function Calendar({ user }: CalendarProps) {
                     <span className="text-red-500 text-xs font-medium">
                       {parseInt(date.split('-')[2])}/{parseInt(date.split('-')[1])}/{parseInt(date.split('-')[0]) + 543}
                     </span>
-                    {customHoliday && isAdmin(user.role) && (
+                    {isAdmin(user.role) && (
                       <div className="flex gap-1">
-                        <button onClick={() => startEditHoliday(customHoliday)} className="text-blue-500 text-xs">✏️</button>
-                        <button onClick={() => handleDeleteHoliday(customHoliday.id)} className="text-red-500 text-xs">🗑️</button>
+                        {customHoliday ? (
+                          <>
+                            <button onClick={() => startEditHoliday(customHoliday)} className="text-blue-500 text-xs" title="แก้ไข">✏️</button>
+                            <button onClick={() => handleDeleteHoliday(customHoliday.id)} className="text-red-500 text-xs" title="ลบ">🗑️</button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => { setEditHolidayId(null); setHolidayForm({ date, name }); setShowAddHoliday(true); }}
+                            className="text-blue-500 text-xs" title="แก้ไขวันหยุดนี้"
+                          >✏️</button>
+                        )}
                       </div>
                     )}
                   </div>

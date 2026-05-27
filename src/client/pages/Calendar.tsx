@@ -55,6 +55,35 @@ const THAI_HOLIDAYS_2025: Record<string, string> = {
 
 const BUILTIN_HOLIDAYS: Record<string, string> = { ...THAI_HOLIDAYS_2025, ...THAI_HOLIDAYS_2026 };
 
+// วันหยุดที่วันที่คงที่ทุกปี (ไม่ต้องเพิ่มเอง)
+const FIXED_HOLIDAYS: { month: number; day: number; name: string }[] = [
+  { month: 1, day: 1, name: 'วันขึ้นปีใหม่' },
+  { month: 4, day: 6, name: 'วันจักรี' },
+  { month: 4, day: 13, name: 'วันสงกรานต์' },
+  { month: 4, day: 14, name: 'วันสงกรานต์' },
+  { month: 4, day: 15, name: 'วันสงกรานต์' },
+  { month: 5, day: 1, name: 'วันแรงงานแห่งชาติ' },
+  { month: 5, day: 4, name: 'วันฉัตรมงคล' },
+  { month: 6, day: 3, name: 'วันเฉลิมพระชนมพรรษา สมเด็จพระราชินี' },
+  { month: 7, day: 28, name: 'วันเฉลิมพระชนมพรรษา พระบาทสมเด็จพระวชิรเกล้าเจ้าอยู่หัว' },
+  { month: 8, day: 12, name: 'วันแม่แห่งชาติ' },
+  { month: 10, day: 13, name: 'วันคล้ายวันสวรรคต ร.9' },
+  { month: 10, day: 23, name: 'วันปิยมหาราช' },
+  { month: 12, day: 5, name: 'วันพ่อแห่งชาติ' },
+  { month: 12, day: 10, name: 'วันรัฐธรรมนูญ' },
+  { month: 12, day: 31, name: 'วันสิ้นปี' },
+];
+
+// สร้างวันหยุดคงที่สำหรับปีที่กำหนด
+function getFixedHolidaysForYear(year: number): Record<string, string> {
+  const holidays: Record<string, string> = {};
+  FIXED_HOLIDAYS.forEach(h => {
+    const key = `${year}-${String(h.month).padStart(2, '0')}-${String(h.day).padStart(2, '0')}`;
+    holidays[key] = h.name;
+  });
+  return holidays;
+}
+
 interface CustomHoliday {
   id: number;
   date: string;
@@ -98,8 +127,8 @@ export default function Calendar({ user }: CalendarProps) {
     const res = await fetch('/api/holidays');
     const data = await res.json();
     setCustomHolidays(data);
-    // Merge with built-in holidays
-    const merged = { ...BUILTIN_HOLIDAYS };
+    // Merge: built-in (2025/2026) + fixed holidays for current year + custom holidays
+    const merged = { ...BUILTIN_HOLIDAYS, ...getFixedHolidaysForYear(year) };
     data.forEach((h: CustomHoliday) => { merged[h.date] = h.name; });
     setAllHolidays(merged);
   };

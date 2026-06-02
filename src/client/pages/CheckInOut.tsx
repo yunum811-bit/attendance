@@ -56,7 +56,18 @@ export default function CheckInOut({ user }: CheckInOutProps) {
   };
 
   const fetchHistory = async () => {
-    const res = await fetch(`/api/attendance/history/${user.id}`);
+    // แสดงเฉพาะสัปดาห์ปัจจุบัน (จันทร์-อาทิตย์)
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0=อาทิตย์, 1=จันทร์, ...
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const startDate = monday.toISOString().split('T')[0];
+    const endDate = sunday.toISOString().split('T')[0];
+
+    const res = await fetch(`/api/attendance/history/${user.id}?start_date=${startDate}&end_date=${endDate}`);
     const data = await res.json();
     setHistory(data);
   };
@@ -332,7 +343,8 @@ export default function CheckInOut({ user }: CheckInOutProps) {
 
       {/* History */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">ประวัติการเข้างาน</h3>
+        <h3 className="text-lg font-semibold mb-1">ประวัติการเข้างาน</h3>
+        <p className="text-xs text-gray-500 mb-4">แสดงเฉพาะสัปดาห์นี้ (จันทร์-อาทิตย์) — ดูประวัติทั้งหมดได้ที่เมนู "รายงาน"</p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50">

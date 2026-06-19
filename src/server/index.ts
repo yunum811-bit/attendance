@@ -1,7 +1,10 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
+// โหลด .env จาก root ของ project (ไม่ขึ้นกับ cwd)
+dotenv.config({ path: path.join(__dirname, '../../.env') });
+
 import express from 'express';
 import cors from 'cors';
-import path from 'path';
 import fs from 'fs';
 import https from 'https';
 import http from 'http';

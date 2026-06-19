@@ -53,6 +53,68 @@ app.use('/api/announcements', announcementRoutes);
 app.use('/api/holidays', holidayRoutes);
 app.use('/api/forgot-checkin', forgotCheckinRoutes);
 
+// External API with API Key (สำหรับ CRM)
+const API_KEY = process.env.API_KEY || 'sf-attendance-api-2026';
+
+app.use('/api/external', (req, res, next) => {
+  const key = req.headers['x-api-key'] || req.query.api_key;
+  if (key !== API_KEY) {
+    return res.status(401).json({ error: 'Invalid API Key' });
+  }
+  next();
+});
+
+// External: ดึงข้อมูลเข้างาน
+app.get('/api/external/attendance', (req, res) => {
+  const { queryAll } = require('./database');
+  const { department_id, employee_id, start_date, end_date } = req.query;
+
+  let query = `
+    SELECT a.date, a.check_in, a.check_out, a.status, a.location_checkin, a.location_checkout,
+           e.employee_code, e.first_name, e.last_name,
+           d.name as department_name
+    FROM attendance a
+    JOIN employees e ON a.employee_id = e.id
+    JOIN departments d ON e.department_id = d.id
+    WHERE 1=1
+  `;
+  const params: any[] = [];
+  if (employee_id) { query += ' AND a.employee_id = ?'; params.push(Number(employee_id)); }
+  if (department_id) { query += ' AND e.department_id = ?'; params.push(Number(department_id)); }
+  if (start_date) { query += ' AND a.date >= ?'; params.push(start_date); }
+  if (end_date) { query += ' AND a.date <= ?'; params.push(end_date); }
+  query += ' ORDER BY a.date DESC, e.employee_code';
+
+  res.json(queryAll(query, params));
+});
+
+// External: ดึงข้อมูลการลา
+app.get('/api/external/leave', (req, res) => {
+  const { queryAll } = require('./database');
+  const { department_id, employee_id, start_date, end_date, status } = req.query;
+
+  let query = `
+    SELECT lr.start_date, lr.end_date, lr.days, lr.reason, lr.status,
+           lt.name as leave_type_name,
+           e.employee_code, e.first_name, e.last_name,
+           d.name as department_name
+    FROM leave_requests lr
+    JOIN leave_types lt ON lr.leave_type_id = lt.id
+    JOIN employees e ON lr.employee_id = e.id
+    JOIN departments d ON e.department_id = d.id
+    WHERE 1=1
+  `;
+  const params: any[] = [];
+  if (employee_id) { query += ' AND lr.employee_id = ?'; params.push(Number(employee_id)); }
+  if (department_id) { query += ' AND e.department_id = ?'; params.push(Number(department_id)); }
+  if (start_date) { query += ' AND lr.start_date >= ?'; params.push(start_date); }
+  if (end_date) { query += ' AND lr.end_date <= ?'; params.push(end_date); }
+  if (status) { query += ' AND lr.status = ?'; params.push(status); }
+  query += ' ORDER BY lr.start_date DESC';
+
+  res.json(queryAll(query, params));
+});
+
 // Serve static files (built frontend)
 const distPath = path.join(__dirname, '../../dist');
 if (fs.existsSync(distPath)) {

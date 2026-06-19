@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -54,15 +55,59 @@ app.use('/api/holidays', holidayRoutes);
 app.use('/api/forgot-checkin', forgotCheckinRoutes);
 
 // External API with API Key (สำหรับ CRM)
-const API_KEY = process.env.API_KEY || 'sf-attendance-api-2026';
+const API_KEY = process.env.API_KEY;
+
+if (!API_KEY) {
+  console.warn('⚠️  API_KEY ไม่ได้ตั้งค่า — External API (/api/external) จะถูกปิดใช้งาน');
+  console.warn('   ตั้งค่า: API_KEY=<your-secret-key> (แนะนำ 32+ ตัวอักษร)');
+}
+
+// Rate limiting สำหรับ External API
+const externalRateLimit: Record<string, { count: number; resetAt: number }> = {};
+const RATE_LIMIT_MAX = 100; // requests per window
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 
 app.use('/api/external', (req, res, next) => {
-  const key = req.headers['x-api-key'] || req.query.api_key;
-  if (key !== API_KEY) {
+  // ถ้าไม่ได้ตั้ง API_KEY → ปิด External API
+  if (!API_KEY) {
+    return res.status(503).json({ error: 'External API is disabled. Set API_KEY environment variable.' });
+  }
+
+  // บังคับใช้ header เท่านั้น (ไม่รับ query string เพื่อป้องกัน key หลุดใน logs)
+  const key = req.headers['x-api-key'] as string;
+  if (!key) {
+    return res.status(401).json({ error: 'Missing X-API-Key header' });
+  }
+
+  // Timing-safe comparison ป้องกัน timing attack
+  if (key.length !== API_KEY.length || !timingSafeEqual(key, API_KEY)) {
     return res.status(401).json({ error: 'Invalid API Key' });
   }
+
+  // Rate limiting by IP
+  const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+  const now = Date.now();
+  const entry = externalRateLimit[clientIp];
+
+  if (!entry || now > entry.resetAt) {
+    externalRateLimit[clientIp] = { count: 1, resetAt: now + RATE_LIMIT_WINDOW };
+  } else {
+    entry.count++;
+    if (entry.count > RATE_LIMIT_MAX) {
+      return res.status(429).json({ error: 'Too many requests. Try again later.' });
+    }
+  }
+
   next();
 });
+
+// Timing-safe string comparison
+function timingSafeEqual(a: string, b: string): boolean {
+  const crypto = require('crypto');
+  const bufA = Buffer.from(a, 'utf8');
+  const bufB = Buffer.from(b, 'utf8');
+  return crypto.timingSafeEqual(bufA, bufB);
+}
 
 // External: ดึงข้อมูลเข้างาน
 app.get('/api/external/attendance', (req, res) => {

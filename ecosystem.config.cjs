@@ -8,6 +8,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 4000,
+        API_KEY: process.env.API_KEY || '',
       },
       instances: 1,
       autorestart: true,

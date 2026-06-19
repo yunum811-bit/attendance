@@ -1,26 +1,57 @@
-# คู่มือเชื่อมต่อ API กับระบบ CRM
+# คู่มือการเชื่อมต่อ API — ระบบ Attendance
 
-## ระบบ Check In/Out — บริษัท ซีเรียลแฟคตอริ่ง (ประเทศไทย) จำกัด
+## บริษัท ซีเรียลแฟคตอริ่ง (ประเทศไทย) จำกัด
+
+**เอกสารฉบับนี้จัดทำสำหรับ:** ทีมพัฒนา CRM / ระบบภายนอกที่ต้องการดึงข้อมูลการเข้างานและการลา  
+**วันที่ออกเอกสาร:** 19 มิถุนายน 2026  
+**เวอร์ชัน:** 2.0  
+**ผู้ดูแล API:** ฝ่ายไอที — บริษัท ซีเรียลแฟคตอริ่ง (ประเทศไทย) จำกัด
 
 ---
 
-## 1. ข้อมูลการเชื่อมต่อ (ส่งให้ทีม CRM)
+## 1. ข้อมูลการเชื่อมต่อ
 
 | รายการ | ค่า |
 |---|---|
-| **Base URL** | `https://checkin.serialfactoring.co.th/api/external` |
-| **API Key** | `sf-crm-2026-a8f3k9x2m5p7` |
-| **วิธีส่ง Key** | Header: `x-api-key: sf-crm-2026-a8f3k9x2m5p7` |
-| **วิธีส่ง Key (ทางเลือก)** | Query: `?api_key=sf-crm-2026-a8f3k9x2m5p7` |
-| **Format** | JSON |
-| **Protocol** | HTTPS |
-| **Method** | GET |
+| Base URL | `https://checkin.serialfactoring.co.th` |
+| Protocol | HTTPS (TLS 1.2+) |
+| Authentication | API Key ผ่าน Header |
+| Header Name | `X-API-Key` |
+| Content-Type | `application/json` |
+| Rate Limit | 100 requests / นาที / IP |
+| Timezone | Asia/Bangkok (UTC+7) |
 
 ---
 
-## 2. Endpoints ที่ให้ CRM ใช้
+## 2. API Key
 
-### 2.1 ดึงข้อมูลเข้า-ออกงาน
+```
+36e51698ae0c14a855ba1d99d3976886f2bc9b4ad283529f3959da3784d1d688
+```
+
+> ⚠️ **ข้อควรปฏิบัติ:**
+> - เก็บ API Key ไว้ใน environment variable หรือ secret manager เท่านั้น
+> - ห้าม hardcode ลงในซอร์สโค้ดหรือ commit ลง repository
+> - ห้ามส่ง key ผ่าน URL query parameter
+> - หาก key รั่วไหล ให้แจ้งผู้ดูแลระบบเพื่อออก key ใหม่ทันที
+
+---
+
+## 3. วิธีเรียก API
+
+ทุก request ต้องแนบ header `X-API-Key`:
+
+```http
+GET /api/external/attendance?start_date=2026-06-01&end_date=2026-06-30 HTTP/1.1
+Host: checkin.serialfactoring.co.th
+X-API-Key: 36e51698ae0c14a855ba1d99d3976886f2bc9b4ad283529f3959da3784d1d688
+```
+
+---
+
+## 4. Endpoints
+
+### 4.1 ดึงข้อมูลการเข้างาน
 
 ```
 GET /api/external/attendance
@@ -28,25 +59,25 @@ GET /api/external/attendance
 
 **Parameters:**
 
-| Parameter | ต้องมี | ตัวอย่าง | คำอธิบาย |
-|---|---|---|---|
-| api_key | ✅ (ถ้าไม่ส่งผ่าน Header) | sf-crm-2026-a8f3k9x2m5p7 | API Key |
-| department_id | ไม่ | 2 | กรองตามแผนก |
-| employee_id | ไม่ | 3 | กรองเฉพาะพนักงาน |
-| start_date | ไม่ | 2026-05-01 | วันที่เริ่ม (yyyy-mm-dd) |
-| end_date | ไม่ | 2026-05-31 | วันที่สิ้นสุด |
+| Parameter | ประเภท | จำเป็น | คำอธิบาย | ตัวอย่าง |
+|---|---|---|---|---|
+| department_id | integer | ไม่ | กรองตามแผนก | 2 |
+| employee_id | integer | ไม่ | กรองตามพนักงาน | 5 |
+| start_date | string | ไม่ | วันที่เริ่ม (yyyy-mm-dd) | 2026-06-01 |
+| end_date | string | ไม่ | วันที่สิ้นสุด (yyyy-mm-dd) | 2026-06-30 |
 
-**ตัวอย่างเรียก:**
-```
-GET https://checkin.serialfactoring.co.th/api/external/attendance?api_key=sf-crm-2026-a8f3k9x2m5p7&department_id=2&start_date=2026-05-01&end_date=2026-05-31
+**ตัวอย่าง cURL:**
+```bash
+curl -H "X-API-Key: 36e51698ae0c14a855ba1d99d3976886f2bc9b4ad283529f3959da3784d1d688" \
+  "https://checkin.serialfactoring.co.th/api/external/attendance?department_id=2&start_date=2026-06-01&end_date=2026-06-30"
 ```
 
-**Response:**
+**Response (HTTP 200):**
 ```json
 [
   {
-    "date": "2026-05-15",
-    "check_in": "08:25:30",
+    "date": "2026-06-19",
+    "check_in": "08:27:41",
     "check_out": "17:35:00",
     "status": "present",
     "location_checkin": "13.7563,100.5018,15",
@@ -59,9 +90,24 @@ GET https://checkin.serialfactoring.co.th/api/external/attendance?api_key=sf-crm
 ]
 ```
 
+**คำอธิบาย Fields:**
+
+| Field | คำอธิบาย |
+|---|---|
+| date | วันที่ (yyyy-mm-dd) |
+| check_in | เวลาเข้างาน (HH:mm:ss) หรือ null |
+| check_out | เวลาออกงาน (HH:mm:ss) หรือ null |
+| status | สถานะ: `present` = มาทำงาน |
+| location_checkin | พิกัด GPS เข้างาน (lat,lng,accuracy) |
+| location_checkout | พิกัด GPS ออกงาน (lat,lng,accuracy) |
+| employee_code | รหัสพนักงาน |
+| first_name | ชื่อ |
+| last_name | นามสกุล |
+| department_name | ชื่อแผนก |
+
 ---
 
-### 2.2 ดึงข้อมูลการลา
+### 4.2 ดึงข้อมูลการลา
 
 ```
 GET /api/external/leave
@@ -69,27 +115,30 @@ GET /api/external/leave
 
 **Parameters:**
 
-| Parameter | ต้องมี | ตัวอย่าง | คำอธิบาย |
-|---|---|---|---|
-| api_key | ✅ (ถ้าไม่ส่งผ่าน Header) | sf-crm-2026-a8f3k9x2m5p7 | API Key |
-| department_id | ไม่ | 2 | กรองตามแผนก |
-| employee_id | ไม่ | 3 | กรองเฉพาะพนักงาน |
-| start_date | ไม่ | 2026-05-01 | วันที่เริ่ม |
-| end_date | ไม่ | 2026-05-31 | วันที่สิ้นสุด |
-| status | ไม่ | approved | กรองตามสถานะ |
+| Parameter | ประเภท | จำเป็น | คำอธิบาย | ตัวอย่าง |
+|---|---|---|---|---|
+| department_id | integer | ไม่ | กรองตามแผนก | 2 |
+| employee_id | integer | ไม่ | กรองตามพนักงาน | 5 |
+| start_date | string | ไม่ | วันที่เริ่มลา >= (yyyy-mm-dd) | 2026-01-01 |
+| end_date | string | ไม่ | วันที่สิ้นสุดลา <= (yyyy-mm-dd) | 2026-12-31 |
+| status | string | ไม่ | กรองตามสถานะ | approved |
 
-**ค่า status ที่ใช้ได้:**
-- `pending` — รออนุมัติ
-- `approved` — อนุมัติแล้ว
-- `rejected` — ไม่อนุมัติ
-- `revoked` — ยกเลิกการอนุมัติ
+**ค่า status ที่เป็นไปได้:**
 
-**ตัวอย่างเรียก (การลาที่อนุมัติแล้ว):**
+| ค่า | ความหมาย |
+|---|---|
+| `pending` | รออนุมัติ |
+| `approved` | อนุมัติแล้ว |
+| `rejected` | ไม่อนุมัติ |
+| `revoked` | ถูกยกเลิกการอนุมัติ |
+
+**ตัวอย่าง cURL:**
+```bash
+curl -H "X-API-Key: 36e51698ae0c14a855ba1d99d3976886f2bc9b4ad283529f3959da3784d1d688" \
+  "https://checkin.serialfactoring.co.th/api/external/leave?status=approved&start_date=2026-01-01&end_date=2026-12-31"
 ```
-GET https://checkin.serialfactoring.co.th/api/external/leave?api_key=sf-crm-2026-a8f3k9x2m5p7&status=approved&start_date=2026-01-01&end_date=2026-12-31
-```
 
-**Response:**
+**Response (HTTP 200):**
 ```json
 [
   {
@@ -107,210 +156,201 @@ GET https://checkin.serialfactoring.co.th/api/external/leave?api_key=sf-crm-2026
 ]
 ```
 
----
+**คำอธิบาย Fields:**
 
-## 3. รหัสแผนก (Department ID)
-
-| ID | ชื่อแผนก |
+| Field | คำอธิบาย |
 |---|---|
-| 1 | ฝ่ายบริหาร |
-| 2 | ฝ่ายไอที |
-| 3 | ฝ่ายบัญชี |
-| 4 | ฝ่ายการตลาด |
-| 5 | ฝ่ายบุคคล |
-
-> ดูแผนกทั้งหมด: `GET /api/departments` (ไม่ต้องใช้ API Key)
-
----
-
-## 4. ตัวอย่างโค้ดสำหรับ CRM
-
-### JavaScript/Node.js:
-
-```javascript
-const API_URL = 'https://checkin.serialfactoring.co.th/api/external';
-const API_KEY = 'sf-crm-2026-a8f3k9x2m5p7';
-
-// ดึงการลาที่อนุมัติแล้ว
-async function getApprovedLeaves(departmentId, startDate, endDate) {
-  const res = await fetch(
-    `${API_URL}/leave?department_id=${departmentId}&status=approved&start_date=${startDate}&end_date=${endDate}`,
-    { headers: { 'x-api-key': API_KEY } }
-  );
-  return await res.json();
-}
-
-// ดึงข้อมูลเข้างาน
-async function getAttendance(departmentId, startDate, endDate) {
-  const res = await fetch(
-    `${API_URL}/attendance?department_id=${departmentId}&start_date=${startDate}&end_date=${endDate}`,
-    { headers: { 'x-api-key': API_KEY } }
-  );
-  return await res.json();
-}
-
-// แปลงเป็น Calendar Events
-async function getCalendarEvents(departmentId, month, year) {
-  const startDate = `${year}-${String(month).padStart(2,'0')}-01`;
-  const endDate = `${year}-${String(month).padStart(2,'0')}-31`;
-
-  const [attendance, leaves] = await Promise.all([
-    getAttendance(departmentId, startDate, endDate),
-    getApprovedLeaves(departmentId, startDate, endDate),
-  ]);
-
-  const events = [];
-
-  // เพิ่ม attendance events
-  attendance.forEach(item => {
-    events.push({
-      title: `${item.first_name} ${item.last_name} (${item.check_in} - ${item.check_out || '?'})`,
-      date: item.date,
-      type: 'attendance',
-      color: item.check_in > '08:30:00' ? 'red' : 'green',
-    });
-  });
-
-  // เพิ่ม leave events
-  leaves.forEach(item => {
-    events.push({
-      title: `${item.first_name} - ${item.leave_type_name} (${item.days} วัน)`,
-      start: item.start_date,
-      end: item.end_date,
-      type: 'leave',
-      color: 'orange',
-    });
-  });
-
-  return events;
-}
-```
-
-### Python:
-
-```python
-import requests
-
-API_URL = 'https://checkin.serialfactoring.co.th/api/external'
-API_KEY = 'sf-crm-2026-a8f3k9x2m5p7'
-
-headers = {'x-api-key': API_KEY}
-
-# ดึงการลา
-def get_leaves(department_id, start_date, end_date, status='approved'):
-    params = {
-        'department_id': department_id,
-        'start_date': start_date,
-        'end_date': end_date,
-        'status': status
-    }
-    response = requests.get(f'{API_URL}/leave', headers=headers, params=params)
-    return response.json()
-
-# ดึงการเข้างาน
-def get_attendance(department_id, start_date, end_date):
-    params = {
-        'department_id': department_id,
-        'start_date': start_date,
-        'end_date': end_date
-    }
-    response = requests.get(f'{API_URL}/attendance', headers=headers, params=params)
-    return response.json()
-
-# ตัวอย่าง
-leaves = get_leaves(2, '2026-05-01', '2026-05-31')
-for leave in leaves:
-    print(f"{leave['first_name']} - {leave['leave_type_name']} ({leave['start_date']} ถึง {leave['end_date']})")
-```
-
-### cURL (ทดสอบ):
-
-```bash
-curl -H "x-api-key: sf-crm-2026-a8f3k9x2m5p7" \
-  "https://checkin.serialfactoring.co.th/api/external/leave?status=approved&department_id=2"
-```
+| start_date | วันที่เริ่มลา (yyyy-mm-dd) |
+| end_date | วันที่สิ้นสุดลา (yyyy-mm-dd) |
+| days | จำนวนวัน (รองรับทศนิยม เช่น 0.5 = ครึ่งวัน) |
+| reason | เหตุผลการลา |
+| status | สถานะ |
+| leave_type_name | ประเภทการลา (เช่น ลาป่วย, ลากิจ, ลาพักร้อน) |
+| employee_code | รหัสพนักงาน |
+| first_name | ชื่อ |
+| last_name | นามสกุล |
+| department_name | ชื่อแผนก |
 
 ---
 
 ## 5. Error Responses
 
-| HTTP Status | ความหมาย | Response |
+| HTTP Status | Response | สาเหตุ |
 |---|---|---|
-| 200 | สำเร็จ | `[{...}, {...}]` |
-| 401 | API Key ผิดหรือไม่มี | `{"error": "Invalid API Key"}` |
-| 500 | Server error | `{"error": "..."}` |
+| 401 | `{"error": "Invalid API Key"}` | API Key ไม่ถูกต้องหรือไม่ได้ส่ง |
+| 429 | `{"error": "Too many requests. Try again later."}` | เกิน rate limit (100 req/นาที) |
+| 503 | `{"error": "External API is disabled."}` | Server ยังไม่ได้ตั้ง API Key |
 
 ---
 
-## 6. สิ่งที่ฝั่งเราเตรียมไว้แล้ว
+## 6. ตัวอย่างโค้ด
 
-| รายการ | สถานะ |
+### JavaScript (Node.js / Frontend)
+
+```javascript
+const API_KEY = process.env.ATTENDANCE_API_KEY;
+const BASE_URL = 'https://checkin.serialfactoring.co.th';
+
+// ดึงข้อมูลเข้างานวันนี้
+async function getTodayAttendance(departmentId) {
+  const today = new Date().toISOString().split('T')[0];
+  
+  const response = await fetch(
+    `${BASE_URL}/api/external/attendance?department_id=${departmentId}&start_date=${today}&end_date=${today}`,
+    { headers: { 'X-API-Key': API_KEY } }
+  );
+  
+  if (!response.ok) {
+    throw new Error(`API Error: ${response.status}`);
+  }
+  
+  return response.json();
+}
+
+// ดึงการลาที่อนุมัติแล้วทั้งปี
+async function getApprovedLeaves(year) {
+  const response = await fetch(
+    `${BASE_URL}/api/external/leave?status=approved&start_date=${year}-01-01&end_date=${year}-12-31`,
+    { headers: { 'X-API-Key': API_KEY } }
+  );
+  
+  if (!response.ok) {
+    throw new Error(`API Error: ${response.status}`);
+  }
+  
+  return response.json();
+}
+```
+
+### Python
+
+```python
+import requests
+import os
+
+API_KEY = os.environ['ATTENDANCE_API_KEY']
+BASE_URL = 'https://checkin.serialfactoring.co.th'
+HEADERS = {'X-API-Key': API_KEY}
+
+# ดึงข้อมูลเข้างาน
+def get_attendance(start_date, end_date, department_id=None):
+    params = {'start_date': start_date, 'end_date': end_date}
+    if department_id:
+        params['department_id'] = department_id
+    
+    response = requests.get(
+        f'{BASE_URL}/api/external/attendance',
+        headers=HEADERS,
+        params=params
+    )
+    response.raise_for_status()
+    return response.json()
+
+# ดึงการลาที่อนุมัติแล้ว
+def get_approved_leaves(start_date, end_date):
+    response = requests.get(
+        f'{BASE_URL}/api/external/leave',
+        headers=HEADERS,
+        params={
+            'status': 'approved',
+            'start_date': start_date,
+            'end_date': end_date
+        }
+    )
+    response.raise_for_status()
+    return response.json()
+```
+
+### C# (.NET)
+
+```csharp
+using System.Net.Http;
+using System.Net.Http.Headers;
+
+var client = new HttpClient();
+client.BaseAddress = new Uri("https://checkin.serialfactoring.co.th");
+client.DefaultRequestHeaders.Add("X-API-Key", Environment.GetEnvironmentVariable("ATTENDANCE_API_KEY"));
+
+// ดึงข้อมูลเข้างาน
+var response = await client.GetAsync("/api/external/attendance?start_date=2026-06-01&end_date=2026-06-30");
+var json = await response.Content.ReadAsStringAsync();
+```
+
+---
+
+## 7. Use Cases สำหรับ CRM
+
+### 7.1 แสดงปฏิทินการลาในหน้า CRM
+
+```javascript
+// ดึงการลาที่อนุมัติ แปลงเป็น calendar events
+const leaves = await getApprovedLeaves(2026);
+
+const calendarEvents = leaves.map(leave => ({
+  title: `${leave.first_name} ${leave.last_name} - ${leave.leave_type_name}`,
+  start: leave.start_date,
+  end: leave.end_date,
+  allDay: true,
+  color: leave.leave_type_name === 'ลาป่วย' ? '#ef4444' : '#f59e0b'
+}));
+```
+
+### 7.2 ตรวจสอบพนักงานที่มาสาย
+
+```javascript
+const attendance = await getTodayAttendance();
+
+const lateEmployees = attendance.filter(a => a.check_in > '08:30:00');
+const notCheckedIn = /* เทียบกับรายชื่อพนักงานทั้งหมด */;
+
+console.log(`มาสาย: ${lateEmployees.length} คน`);
+```
+
+### 7.3 สรุปสถิติรายเดือน
+
+```javascript
+const monthData = await fetch(
+  `${BASE_URL}/api/external/attendance?department_id=2&start_date=2026-06-01&end_date=2026-06-30`,
+  { headers: { 'X-API-Key': API_KEY } }
+).then(r => r.json());
+
+// นับจำนวนวันทำงานต่อคน
+const summary = {};
+monthData.forEach(record => {
+  const name = `${record.first_name} ${record.last_name}`;
+  if (!summary[name]) summary[name] = { present: 0, late: 0 };
+  summary[name].present++;
+  if (record.check_in > '08:30:00') summary[name].late++;
+});
+```
+
+---
+
+## 8. ข้อจำกัดและหมายเหตุ
+
+| หัวข้อ | รายละเอียด |
 |---|---|
-| ✅ API Endpoint พร้อมใช้ | `/api/external/attendance` + `/api/external/leave` |
-| ✅ API Key | `sf-crm-2026-a8f3k9x2m5p7` |
-| ✅ HTTPS (SSL) | ปลอดภัย |
-| ✅ CORS เปิด | CRM เรียกจาก domain อื่นได้ |
-| ✅ กรองตามแผนก/พนักงาน/วันที่/สถานะ | ครบ |
-| ✅ Response เป็น JSON | พร้อมใช้ |
+| Rate Limit | 100 requests/นาที/IP — ถ้าเกินจะได้ 429 |
+| ข้อมูลที่ดึงได้ | เฉพาะข้อมูลเข้างานและการลา (read-only) |
+| การเขียนข้อมูล | ไม่รองรับ — ต้องทำผ่านหน้า Web เท่านั้น |
+| รูปแบบวันที่ | `yyyy-mm-dd` (เช่น 2026-06-19) |
+| รูปแบบเวลา | `HH:mm:ss` (เช่น 08:30:00) |
+| Timezone | Asia/Bangkok — เวลาที่ return เป็นเวลาไทย |
+| Pagination | ไม่มี — ส่งข้อมูลทั้งหมดตาม filter |
+| ข้อมูลรูปภาพ | ไม่รวมอยู่ใน External API |
 
 ---
 
-## 7. สิ่งที่ต้องแจ้งทีม CRM
+## 9. การติดต่อ
 
-ส่งข้อมูลนี้ให้ทีม CRM:
+หากมีปัญหาในการเชื่อมต่อหรือต้องการ:
+- ขอ API Key ใหม่ (กรณี key รั่วไหล)
+- เพิ่ม endpoint / field ใหม่
+- เพิ่ม rate limit
 
-```
-=== API สำหรับเชื่อมต่อ CRM ===
-
-Base URL: https://checkin.serialfactoring.co.th/api/external
-API Key: sf-crm-2026-a8f3k9x2m5p7
-ส่ง Key ผ่าน Header: x-api-key
-
-Endpoints:
-- GET /attendance — ข้อมูลเข้า-ออกงาน
-- GET /leave — ข้อมูลการลา
-
-Parameters: department_id, employee_id, start_date, end_date, status
-
-ทดสอบ (เปิด Browser):
-https://checkin.serialfactoring.co.th/api/external/leave?api_key=sf-crm-2026-a8f3k9x2m5p7&status=approved
-
-เอกสารเต็ม: [แนบไฟล์นี้]
-```
+กรุณาติดต่อ:  
+**ฝ่ายไอที — บริษัท ซีเรียลแฟคตอริ่ง (ประเทศไทย) จำกัด**
 
 ---
 
-## 8. สิ่งที่ต้องถาม CRM กลับ
-
-1. ต้องการข้อมูลของแผนกไหน? (หรือทุกแผนก)
-2. ดึงข้อมูลบ่อยแค่ไหน? (real-time / ทุกชั่วโมง / วันละครั้ง)
-3. ต้องการ field เพิ่มเติมไหม?
-4. CRM ใช้ภาษาอะไร? (JavaScript/Python/PHP/อื่นๆ)
-5. ต้องการ Webhook ไหม? (ส่งข้อมูลไป CRM ทันทีเมื่อมีเหตุการณ์)
-
----
-
-## 9. การเปลี่ยน API Key
-
-SSH เข้า Lightsail:
-```bash
-pm2 delete attendance
-cd /var/www/attendance
-API_KEY="key-ใหม่-ที่ต้องการ" pm2 start "npx tsx src/server/index.ts" --name attendance
-pm2 save
-```
-
----
-
-## 10. ความปลอดภัย
-
-| มาตรการ | สถานะ |
-|---|---|
-| HTTPS | ✅ ข้อมูลเข้ารหัส |
-| API Key | ✅ ต้องมี key ถึงเข้าถึงได้ |
-| ไม่มีข้อมูลรหัสผ่าน | ✅ API ไม่ส่งรหัสผ่านออกไป |
-| กรองตามแผนก | ✅ ดึงเฉพาะที่ต้องการ |
-
----
-
-*คู่มือนี้ปรับปรุงล่าสุด: พฤษภาคม 2026*
+*เอกสารฉบับนี้เป็นความลับ ห้ามเผยแพร่ภายนอกโดยไม่ได้รับอนุญาต*

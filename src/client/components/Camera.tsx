@@ -11,7 +11,7 @@ export default function Camera({ onCapture, onCancel }: CameraProps) {
   const streamRef = useRef<MediaStream | null>(null);
   const [error, setError] = useState('');
   const [captured, setCaptured] = useState<string | null>(null);
-  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
   const [cameraReady, setCameraReady] = useState(false);
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
 
@@ -28,15 +28,22 @@ export default function Camera({ onCapture, onCancel }: CameraProps) {
     }
 
     // Check number of cameras
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter(d => d.kind === 'videoinput');
-      setHasMultipleCameras(videoDevices.length > 1);
-    } catch {
-      // Ignore
+    // iOS Safari อาจไม่แสดงจำนวนกล้องจริงก่อนได้รับ permission
+    // ดังนั้นสำหรับ mobile ให้ถือว่ามีหลายกล้องเสมอ
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      setHasMultipleCameras(true);
+    } else {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(d => d.kind === 'videoinput');
+        setHasMultipleCameras(videoDevices.length > 1);
+      } catch {
+        // Ignore
+      }
     }
 
-    startCamera('user');
+    startCamera('environment');
   };
 
   const stopStream = () => {
@@ -58,10 +65,12 @@ export default function Camera({ onCapture, onCancel }: CameraProps) {
     setError('');
 
     try {
-      // Try with facingMode constraint
+      // iOS Safari ต้องใช้ exact สำหรับ facingMode ถึงจะสลับกล้องได้
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      
       let constraints: MediaStreamConstraints = {
         video: {
-          facingMode: { ideal: facing },
+          facingMode: isIOS ? { exact: facing } : { ideal: facing },
           width: { ideal: 640, max: 1280 },
           height: { ideal: 480, max: 960 },
         },
@@ -72,9 +81,22 @@ export default function Camera({ onCapture, onCancel }: CameraProps) {
       try {
         mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       } catch {
-        // Fallback: try without facingMode (some devices don't support it)
-        constraints = { video: true, audio: false };
-        mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        // Fallback: ถ้า exact ไม่ได้ ลอง ideal
+        constraints = {
+          video: {
+            facingMode: { ideal: facing },
+            width: { ideal: 640, max: 1280 },
+            height: { ideal: 480, max: 960 },
+          },
+          audio: false,
+        };
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch {
+          // Final fallback: ไม่ระบุ facingMode
+          constraints = { video: true, audio: false };
+          mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        }
       }
 
       streamRef.current = mediaStream;
@@ -160,6 +182,17 @@ export default function Camera({ onCapture, onCancel }: CameraProps) {
 
     ctx.drawImage(video, 0, 0, width, height);
 
+    // เพิ่มความสว่าง +15% เพื่อแก้ปัญหาภาพมืด
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+    const brightnessBoost = 25; // เพิ่ม brightness (0-255 scale)
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = Math.min(255, data[i] + brightnessBoost);       // R
+      data[i + 1] = Math.min(255, data[i + 1] + brightnessBoost); // G
+      data[i + 2] = Math.min(255, data[i + 2] + brightnessBoost); // B
+    }
+    ctx.putImageData(imageData, 0, 0);
+
     const photoData = canvas.toDataURL('image/jpeg', 0.7);
     setCaptured(photoData);
 
@@ -236,6 +269,7 @@ export default function Camera({ onCapture, onCancel }: CameraProps) {
               className={`w-full h-full object-cover ${
                 facingMode === 'user' ? 'scale-x-[-1]' : ''
               }`}
+              style={{ filter: 'brightness(1.15)' }}
             />
             {!cameraReady && (
               <div className="absolute inset-0 flex items-center justify-center bg-black">

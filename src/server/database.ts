@@ -166,6 +166,8 @@ export async function initDatabase(): Promise<SqlJsDatabase> {
       end_date TEXT NOT NULL,
       days INTEGER NOT NULL,
       reason TEXT,
+      attachment TEXT,
+      attachment_name TEXT,
       status TEXT NOT NULL DEFAULT 'pending',
       approved_by INTEGER,
       approved_at DATETIME,
@@ -176,6 +178,14 @@ export async function initDatabase(): Promise<SqlJsDatabase> {
       FOREIGN KEY (approved_by) REFERENCES employees(id)
     );
   `);
+
+  // Migration: เพิ่ม column attachment ถ้ายังไม่มี
+  try {
+    db.run("ALTER TABLE leave_requests ADD COLUMN attachment TEXT DEFAULT ''");
+  } catch { /* column already exists */ }
+  try {
+    db.run("ALTER TABLE leave_requests ADD COLUMN attachment_name TEXT DEFAULT ''");
+  } catch { /* column already exists */ }
 
   // Seed default data
   const [{ values: [[deptCount]] }] = db.exec('SELECT COUNT(*) FROM departments');

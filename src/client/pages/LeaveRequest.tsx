@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Employee } from '../App';
 import { formatDate } from '../utils/date';
 
@@ -42,6 +42,9 @@ export default function LeaveRequest({ user }: LeaveRequestProps) {
   });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [attachment, setAttachment] = useState<string | null>(null);
+  const [attachmentName, setAttachmentName] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchLeaveTypes();
@@ -58,6 +61,21 @@ export default function LeaveRequest({ user }: LeaveRequestProps) {
     const res = await fetch(`/api/leave/my-requests/${user.id}`);
     const data = await res.json();
     setRequests(data);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('ไฟล์ใหญ่เกินไป (สูงสุด 5MB)');
+      return;
+    }
+    setAttachmentName(file.name);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setAttachment(ev.target?.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const calculateHours = (): number => {
@@ -114,6 +132,8 @@ export default function LeaveRequest({ user }: LeaveRequestProps) {
           end_date: form.end_date || form.start_date,
           days: Math.max(days, 0.125),
           reason: reasonText,
+          attachment,
+          attachment_name: attachmentName,
         }),
       });
 
@@ -126,6 +146,8 @@ export default function LeaveRequest({ user }: LeaveRequestProps) {
       setMessage(data.message);
       setShowForm(false);
       setForm({ leave_type_id: '', start_date: '', end_date: '', duration_type: 'full_day', half_day_period: 'morning', hours: '', hour_start: '', hour_end: '', reason: '' });
+      setAttachment(null);
+      setAttachmentName('');
       fetchMyRequests();
     } catch {
       setError('เกิดข้อผิดพลาด');
@@ -372,6 +394,31 @@ export default function LeaveRequest({ user }: LeaveRequestProps) {
                 rows={3}
                 placeholder="ระบุเหตุผลการลา"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                แนบเอกสาร (ถ้ามี)
+              </label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                onChange={handleFileSelect}
+                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+              />
+              {attachmentName && (
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-xs text-green-600">📎 {attachmentName}</span>
+                  <button
+                    type="button"
+                    onClick={() => { setAttachment(null); setAttachmentName(''); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                    className="text-xs text-red-500 hover:text-red-700"
+                  >
+                    ✕ ลบ
+                  </button>
+                </div>
+              )}
+              <p className="text-xs text-gray-400 mt-1">รองรับ PDF, Word, รูปภาพ (สูงสุด 5MB) เช่น ใบรับรองแพทย์</p>
             </div>
             <button
               type="submit"

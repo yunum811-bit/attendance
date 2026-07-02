@@ -54,12 +54,36 @@ router.delete('/types/:id', (req: Request, res: Response) => {
 
 // Create leave request
 router.post('/request', (req: Request, res: Response) => {
-  const { employee_id, leave_type_id, start_date, end_date, days, reason } = req.body;
+  const { employee_id, leave_type_id, start_date, end_date, days, reason, attachment, attachment_name } = req.body;
+
+  // Save attachment if provided
+  let attachmentUrl = '';
+  let savedFileName = '';
+  if (attachment) {
+    const fs = require('fs');
+    const path = require('path');
+    const { uploadsDir } = require('../database');
+    const leaveDocsDir = path.join(uploadsDir, 'leave-docs');
+    if (!fs.existsSync(leaveDocsDir)) {
+      fs.mkdirSync(leaveDocsDir, { recursive: true });
+    }
+    const matches = attachment.match(/^data:(.+);base64,(.+)$/);
+    if (matches) {
+      const mimeType = matches[1];
+      const data = matches[2];
+      const ext = mimeType.split('/')[1]?.replace('x-', '').replace('vnd.openxmlformats-officedocument.wordprocessingml.document', 'docx') || 'bin';
+      const filename = `leave_${employee_id}_${Date.now()}.${ext}`;
+      const filePath = path.join(leaveDocsDir, filename);
+      fs.writeFileSync(filePath, Buffer.from(data, 'base64'));
+      attachmentUrl = `/uploads/leave-docs/${filename}`;
+      savedFileName = attachment_name || filename;
+    }
+  }
 
   const { lastId } = execute(`
-    INSERT INTO leave_requests (employee_id, leave_type_id, start_date, end_date, days, reason)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `, [employee_id, leave_type_id, start_date, end_date, days, reason || '']);
+    INSERT INTO leave_requests (employee_id, leave_type_id, start_date, end_date, days, reason, attachment, attachment_name)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `, [employee_id, leave_type_id, start_date, end_date, days, reason || '', attachmentUrl, savedFileName]);
 
   // Get requester info
   const requester = queryOne('SELECT * FROM employees WHERE id = ?', [employee_id]);

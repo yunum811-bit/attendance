@@ -167,7 +167,7 @@ export default function Announcements({ user }: AnnouncementsProps) {
           <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-xl font-bold text-gray-800">{selectedAnnouncement.title}</h3>
-              <button onClick={() => setSelectedAnnouncement(null)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+              <button onClick={() => setSelectedAnnouncement(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none p-1 min-w-[44px] min-h-[44px] flex items-center justify-center">✕</button>
             </div>
             <p className="text-xs text-gray-500 mb-4">
               โดย {selectedAnnouncement.first_name} {selectedAnnouncement.last_name} • {formatDate(selectedAnnouncement.created_at.split(' ')[0])}
@@ -176,7 +176,7 @@ export default function Announcements({ user }: AnnouncementsProps) {
               {selectedAnnouncement.content}
             </div>
             {selectedAnnouncement.attachment && (
-              <div className="border-t pt-4">
+              <div className="border-t pt-4 mb-4">
                 <a
                   href={selectedAnnouncement.attachment}
                   target="_blank"
@@ -187,6 +187,15 @@ export default function Announcements({ user }: AnnouncementsProps) {
                 </a>
               </div>
             )}
+            {/* ปุ่มปิดด้านล่าง */}
+            <div className="border-t pt-4 flex justify-center">
+              <button
+                onClick={() => setSelectedAnnouncement(null)}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-3 rounded-lg text-sm font-medium min-h-[48px]"
+              >
+                ✕ ปิด
+              </button>
+            </div>
           </div>
         </div>
       )}

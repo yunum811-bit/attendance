@@ -311,7 +311,15 @@ export default function LeaveRequest({ user }: LeaveRequestProps) {
                 <input
                   type="date"
                   value={form.start_date}
-                  onChange={(e) => setForm({ ...form, start_date: e.target.value, end_date: form.duration_type !== 'full_day' ? e.target.value : form.end_date })}
+                  onChange={(e) => {
+                    const newStart = e.target.value;
+                    // Auto-fill end_date = start_date เสมอ (ผู้ใช้ค่อยเปลี่ยนถ้าลาหลายวัน)
+                    setForm({ 
+                      ...form, 
+                      start_date: newStart, 
+                      end_date: (!form.end_date || form.end_date < newStart) ? newStart : form.end_date 
+                    });
+                  }}
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
                   required
                 />
@@ -325,6 +333,7 @@ export default function LeaveRequest({ user }: LeaveRequestProps) {
                   <input
                     type="date"
                     value={form.end_date}
+                    min={form.start_date}
                     onChange={(e) => setForm({ ...form, end_date: e.target.value })}
                     className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
                     required

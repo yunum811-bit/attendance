@@ -333,11 +333,11 @@ export default function LeaveRequest({ user }: LeaveRequestProps) {
                   value={form.start_date}
                   onChange={(e) => {
                     const newStart = e.target.value;
-                    // Auto-fill end_date = start_date เสมอ (ผู้ใช้ค่อยเปลี่ยนถ้าลาหลายวัน)
+                    // Auto-fill end_date = start_date เสมอเมื่อเลือกวันเริ่มใหม่
                     setForm({ 
                       ...form, 
                       start_date: newStart, 
-                      end_date: (!form.end_date || form.end_date < newStart) ? newStart : form.end_date 
+                      end_date: newStart
                     });
                   }}
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"

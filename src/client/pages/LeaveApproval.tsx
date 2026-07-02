@@ -20,6 +20,8 @@ interface PendingRequest {
   status: string;
   requester_role: string;
   department_name?: string;
+  attachment?: string;
+  attachment_name?: string;
   created_at: string;
 }
 
@@ -169,6 +171,16 @@ export default function LeaveApproval({ user }: LeaveApprovalProps) {
           {req.reason && (
             <p className="text-sm text-gray-500 mt-1">เหตุผล: {req.reason}</p>
           )}
+          {req.attachment && (
+            <a
+              href={req.attachment}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 mt-1 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              📎 ดูเอกสารแนบ: {req.attachment_name || 'ไฟล์แนบ'}
+            </a>
+          )}
           <p className="text-xs text-gray-400 mt-1">
             ส่งเมื่อ: {new Date(req.created_at).toLocaleString('th-TH')}
           </p>
@@ -305,6 +317,11 @@ export default function LeaveApproval({ user }: LeaveApprovalProps) {
                   <p className="text-xs text-gray-600">
                     {req.leave_type_name} | {req.start_date} ถึง {req.end_date} ({req.days} วัน)
                   </p>
+                  {req.attachment && (
+                    <a href={req.attachment} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
+                      📎 {req.attachment_name || 'ดูเอกสารแนบ'}
+                    </a>
+                  )}
                   {req.department_name && (
                     <p className="text-xs text-gray-400">แผนก: {req.department_name}</p>
                   )}

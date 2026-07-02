@@ -152,6 +152,26 @@ export default function LeaveRequest({ user }: LeaveRequestProps) {
     );
   };
 
+  const handleCancel = async (id: number) => {
+    if (!confirm('ยืนยันยกเลิกคำขอลานี้?')) return;
+    try {
+      const res = await fetch(`/api/leave/cancel/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employee_id: user.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error);
+        return;
+      }
+      setMessage(data.message);
+      fetchMyRequests();
+    } catch {
+      setError('เกิดข้อผิดพลาด');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -376,6 +396,7 @@ export default function LeaveRequest({ user }: LeaveRequestProps) {
                 <th className="px-4 py-3 text-left">เหตุผล</th>
                 <th className="px-4 py-3 text-left">สถานะ</th>
                 <th className="px-4 py-3 text-left">ผู้อนุมัติ</th>
+                <th className="px-4 py-3 text-center">จัดการ</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -396,11 +417,21 @@ export default function LeaveRequest({ user }: LeaveRequestProps) {
                       </p>
                     )}
                   </td>
+                  <td className="px-4 py-3 text-center">
+                    {req.status === 'pending' && (
+                      <button
+                        onClick={() => handleCancel(req.id)}
+                        className="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1 rounded text-xs font-medium"
+                      >
+                        ยกเลิก
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
               {requests.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
                     ยังไม่มีประวัติการลา
                   </td>
                 </tr>

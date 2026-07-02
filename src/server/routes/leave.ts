@@ -480,6 +480,31 @@ router.get('/summary/:employeeId', (req: Request, res: Response) => {
   res.json(summary);
 });
 
+// Cancel leave request (พนักงานยกเลิกเอง — เฉพาะ status = pending)
+router.put('/cancel/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { employee_id } = req.body;
+
+  const leaveRequest = queryOne('SELECT * FROM leave_requests WHERE id = ?', [Number(id)]);
+  if (!leaveRequest) {
+    return res.status(404).json({ error: 'ไม่พบคำขอลา' });
+  }
+
+  // ตรวจว่าเป็นเจ้าของคำขอ
+  if (leaveRequest.employee_id !== employee_id) {
+    return res.status(403).json({ error: 'คุณไม่ใช่เจ้าของคำขอลานี้' });
+  }
+
+  // ยกเลิกได้เฉพาะ pending เท่านั้น
+  if (leaveRequest.status !== 'pending') {
+    return res.status(400).json({ error: 'ยกเลิกได้เฉพาะคำขอที่ยังรออนุมัติเท่านั้น' });
+  }
+
+  execute('DELETE FROM leave_requests WHERE id = ?', [Number(id)]);
+
+  res.json({ message: 'ยกเลิกคำขอลาสำเร็จ' });
+});
+
 export default router;
 
 

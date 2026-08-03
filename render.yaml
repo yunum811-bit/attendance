@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: attendance-system
+    runtime: node
+    nodeVersion: "20"
+    buildCommand: npm install && npx vite build
+    startCommand: npx tsx src/server/index.ts
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /opt/render/project/data
+      - key: UPLOADS_DIR
+        value: /opt/render/project/data/uploads
+    disk:
+      name: attendance-data
+      mountPath: /opt/render/project/data
+      sizeGB: 1

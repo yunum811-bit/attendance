@@ -4,11 +4,17 @@ import Camera from '../components/Camera';
 import LocationConfirm from '../components/LocationConfirm';
 import { formatDate } from '../utils/date';
 
-// ตรวจว่ามาสายไหม (เกิน 08:30)
+// ตรวจว่ามาสายไหม (เกิน 08:30:59 ถือว่าสาย)
 const isLate = (checkInTime: string): boolean => {
   if (!checkInTime) return false;
-  const [h, m] = checkInTime.split(':').map(Number);
-  return (h > 8) || (h === 8 && m > 30);
+  const parts = checkInTime.split(':').map(Number);
+  const h = parts[0];
+  const m = parts[1];
+  const s = parts[2] || 0;
+  if (h > 8) return true;
+  if (h === 8 && m > 30) return true;
+  if (h === 8 && m === 30 && s > 59) return true;
+  return false;
 };
 
 interface CheckInOutProps {

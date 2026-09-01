@@ -177,7 +177,7 @@ router.get('/summary', (req: Request, res: Response) => {
     SELECT e.employee_code, e.first_name, e.last_name,
            d.name as department_name,
            COUNT(CASE WHEN a.status = 'present' THEN 1 END) as present_days,
-           COUNT(CASE WHEN a.check_in > '09:00:00' THEN 1 END) as late_days,
+           COUNT(CASE WHEN a.check_in > '08:30:59' THEN 1 END) as late_days,
            (SELECT COALESCE(SUM(lr.days), 0) FROM leave_requests lr 
             WHERE lr.employee_id = e.id AND lr.status = 'approved' 
             AND lr.start_date LIKE ?) as leave_days

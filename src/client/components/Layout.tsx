@@ -37,6 +37,10 @@ export default function Layout({ user, onLogout, children }: LayoutProps) {
     { path: '/leave', label: 'ขอลา', icon: '📋' },
     { path: '/announcements', label: 'ประกาศ', icon: '📢' },
     { path: '/calendar', label: 'ปฏิทิน', icon: '📅' },
+    { path: '/work-log', label: 'บันทึกงาน', icon: '📋' },
+    ...(isManagerOrAdmin(user.role)
+      ? [{ path: '/work-log-approval', label: 'รับทราบงาน', icon: '✅' }]
+      : []),
     ...(isManagerOrAdmin(user.role)
       ? [{ path: '/approval', label: 'อนุมัติ', icon: '✅' }]
       : []),
@@ -55,6 +59,9 @@ export default function Layout({ user, onLogout, children }: LayoutProps) {
       : []),
     ...(isAdmin(user.role)
       ? [{ path: '/settings', label: 'ตั้งค่า', icon: '⚙️' }]
+      : []),
+    ...(isAdmin(user.role)
+      ? [{ path: '/api-keys', label: 'API Keys', icon: '🔐' }]
       : []),
     { path: '/change-password', label: 'เปลี่ยนรหัสผ่าน', icon: '🔑' },
   ];

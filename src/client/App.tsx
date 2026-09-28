@@ -14,6 +14,9 @@ import Announcements from './pages/Announcements';
 import Calendar from './pages/Calendar';
 import LeaveTypes from './pages/LeaveTypes';
 import Departments from './pages/Departments';
+import ApiKeys from './pages/ApiKeys';
+import WorkLog from './pages/WorkLog';
+import WorkLogApproval from './pages/WorkLogApproval';
 import Layout from './components/Layout';
 import InstallPrompt from './components/InstallPrompt';
 import { isAdmin, isManagerOrAdmin } from './utils/roles';
@@ -88,9 +91,16 @@ function App() {
           {isAdmin(user.role) && (
             <Route path="/settings" element={<Settings />} />
           )}
+          {isAdmin(user.role) && (
+            <Route path="/api-keys" element={<ApiKeys />} />
+          )}
           <Route path="/change-password" element={<ChangePassword user={user} />} />
           <Route path="/announcements" element={<Announcements user={user} />} />
           <Route path="/calendar" element={<Calendar user={user} />} />
+          <Route path="/work-log" element={<WorkLog user={user} />} />
+          {isManagerOrAdmin(user.role) && (
+            <Route path="/work-log-approval" element={<WorkLogApproval user={user} />} />
+          )}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Layout>

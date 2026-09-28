@@ -21,6 +21,8 @@ import notificationRoutes from './routes/notification';
 import announcementRoutes from './routes/announcement';
 import holidayRoutes from './routes/holiday';
 import forgotCheckinRoutes from './routes/forgotCheckin';
+import apiKeyRoutes, { verifyApiKey } from './routes/apiKey';
+import workLogRoutes from './routes/workLog';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '4000');
@@ -57,34 +59,35 @@ app.use('/api/announcements', announcementRoutes);
 app.use('/api/holidays', holidayRoutes);
 app.use('/api/forgot-checkin', forgotCheckinRoutes);
 
-// External API with API Key (สำหรับ CRM)
-const API_KEY = process.env.API_KEY;
+// Admin: จัดการ API Keys
+app.use('/api/admin/api-keys', apiKeyRoutes);
+app.use('/api/work-logs', workLogRoutes);
 
-if (!API_KEY) {
-  console.warn('⚠️  API_KEY ไม่ได้ตั้งค่า — External API (/api/external) จะถูกปิดใช้งาน');
-  console.warn('   ตั้งค่า: API_KEY=<your-secret-key> (แนะนำ 32+ ตัวอักษร)');
-}
+// External API with API Key (สำหรับ automation / โปรแกรมภายนอก)
+const LEGACY_API_KEY = process.env.API_KEY; // รองรับ key เดิมจาก .env
 
 // Rate limiting สำหรับ External API
 const externalRateLimit: Record<string, { count: number; resetAt: number }> = {};
-const RATE_LIMIT_MAX = 100; // requests per window
-const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX = 100;
+const RATE_LIMIT_WINDOW = 60 * 1000;
 
 app.use('/api/external', (req, res, next) => {
-  // ถ้าไม่ได้ตั้ง API_KEY → ปิด External API
-  if (!API_KEY) {
-    return res.status(503).json({ error: 'External API is disabled. Set API_KEY environment variable.' });
-  }
-
-  // บังคับใช้ header เท่านั้น (ไม่รับ query string เพื่อป้องกัน key หลุดใน logs)
-  const key = req.headers['x-api-key'] as string;
-  if (!key) {
+  const rawKey = req.headers['x-api-key'] as string;
+  if (!rawKey) {
     return res.status(401).json({ error: 'Missing X-API-Key header' });
   }
 
-  // Timing-safe comparison ป้องกัน timing attack
-  if (key.length !== API_KEY.length || !timingSafeEqual(key, API_KEY)) {
-    return res.status(401).json({ error: 'Invalid API Key' });
+  // ตรวจจาก DB ก่อน (ระบบใหม่)
+  const { valid, keyData } = verifyApiKey(rawKey);
+
+  // ถ้าไม่เจอใน DB ให้ fallback ไปตรวจ legacy key จาก .env
+  if (!valid) {
+    if (!LEGACY_API_KEY) {
+      return res.status(401).json({ error: 'Invalid API Key' });
+    }
+    if (rawKey.length !== LEGACY_API_KEY.length || !timingSafeEqual(rawKey, LEGACY_API_KEY)) {
+      return res.status(401).json({ error: 'Invalid API Key' });
+    }
   }
 
   // Rate limiting by IP

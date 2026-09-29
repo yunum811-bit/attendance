@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Employee } from '../App';
-import { isAdmin, isManagerOrAdmin } from '../utils/roles';
+import { isAdmin, isManagerOrAdmin, isMD } from '../utils/roles';
 
 interface WorkLogApprovalProps {
   user: Employee;
@@ -73,7 +73,16 @@ export default function WorkLogApproval({ user }: WorkLogApprovalProps) {
       let url = '/api/work-logs?';
       if (filterStart) url += `start_date=${filterStart}&`;
       if (filterEnd)   url += `end_date=${filterEnd}&`;
-      if (filterDept)  url += `department_id=${filterDept}&`;
+
+      // admin/MD เห็นทั้งหมด — ถ้าเลือก filter แผนกก็ใช้ตัวกรองนั้น
+      // manager เห็นเฉพาะแผนกตัวเอง — ไม่สามารถเปลี่ยนได้
+      if (isAdmin(user.role) || isMD(user.role)) {
+        if (filterDept) url += `department_id=${filterDept}&`;
+      } else {
+        // manager: บังคับ filter แผนกตัวเอง
+        url += `department_id=${user.department_id}&`;
+      }
+
       const res = await fetch(url);
       let data: WorkLogEntry[] = await res.json();
 
@@ -131,7 +140,11 @@ export default function WorkLogApproval({ user }: WorkLogApprovalProps) {
     let url = '/api/work-logs/export/excel?';
     if (filterStart) url += `start_date=${filterStart}&`;
     if (filterEnd)   url += `end_date=${filterEnd}&`;
-    if (filterDept)  url += `department_id=${filterDept}&`;
+    if (isAdmin(user.role) || isMD(user.role)) {
+      if (filterDept) url += `department_id=${filterDept}&`;
+    } else {
+      url += `department_id=${user.department_id}&`;
+    }
     window.open(url, '_blank');
   };
 
@@ -201,7 +214,7 @@ export default function WorkLogApproval({ user }: WorkLogApprovalProps) {
           <input type="date" value={filterEnd} onChange={e => setFilterEnd(e.target.value)}
             className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
-        {isAdmin(user.role) && (
+        {isAdmin(user.role) || isMD(user.role) ? (
           <div>
             <label className="block text-xs text-gray-500 mb-1">แผนก</label>
             <select value={filterDept} onChange={e => setFilterDept(e.target.value)}
@@ -211,6 +224,13 @@ export default function WorkLogApproval({ user }: WorkLogApprovalProps) {
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>
+          </div>
+        ) : (
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">แผนก</label>
+            <div className="border border-gray-200 bg-gray-50 rounded-lg px-3 py-1.5 text-sm text-gray-600">
+              {user.department_name} (แผนกของคุณ)
+            </div>
           </div>
         )}
         <div>

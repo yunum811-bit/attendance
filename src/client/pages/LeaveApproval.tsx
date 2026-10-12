@@ -34,9 +34,40 @@ export default function LeaveApproval({ user }: LeaveApprovalProps) {
   const [rejectingId, setRejectingId] = useState<number | null>(null);
   const [message, setMessage] = useState('');
 
+  // Filter สำหรับส่วน "อนุมัติแล้ว"
+  const [filterName, setFilterName] = useState('');
+  const [filterStartDate, setFilterStartDate] = useState('');
+  const [filterEndDate, setFilterEndDate] = useState('');
+  const [filterDept, setFilterDept] = useState('');
+  const [departments, setDepartments] = useState<{id: number; name: string}[]>([]);
   useEffect(() => {
     fetchPending();
+    fetchDepartments();
   }, []);
+
+  useEffect(() => {
+    if (isAdmin(user.role)) {
+      fetchApproved();
+    }
+  }, [filterName, filterStartDate, filterEndDate, filterDept]);
+
+  const fetchDepartments = async () => {
+    try {
+      const res = await fetch('/api/departments');
+      setDepartments(await res.json());
+    } catch {}
+  };
+
+  const fetchApproved = async () => {
+    let url = '/api/leave/recent-approved?';
+    if (filterName)      url += `name=${encodeURIComponent(filterName)}&`;
+    if (filterStartDate) url += `start_date=${filterStartDate}&`;
+    if (filterEndDate)   url += `end_date=${filterEndDate}&`;
+    if (filterDept)      url += `department_id=${filterDept}&`;
+    const res = await fetch(url);
+    const data = await res.json();
+    setApprovedRequests(data);
+  };
 
   const fetchPending = async () => {
     if (isAdmin(user.role) || isMD(user.role)) {
@@ -60,9 +91,7 @@ export default function LeaveApproval({ user }: LeaveApprovalProps) {
 
     // Admin: fetch recently approved (for revoke)
     if (isAdmin(user.role)) {
-      const res = await fetch('/api/leave/recent-approved');
-      const data = await res.json();
-      setApprovedRequests(data);
+      fetchApproved();
     }
 
     // Fetch forgot check-in requests
@@ -299,7 +328,7 @@ export default function LeaveApproval({ user }: LeaveApprovalProps) {
       )}
 
       {/* Section: Recently Approved (Admin can revoke) */}
-      {isAdmin(user.role) && approvedRequests.length > 0 && (
+      {isAdmin(user.role) && (
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-1">
             อนุมัติแล้ว (ยกเลิกได้) ({approvedRequests.length})
@@ -307,34 +336,92 @@ export default function LeaveApproval({ user }: LeaveApprovalProps) {
           <p className="text-sm text-gray-500 mb-4">
             กดปุ่ม "ยกเลิก" เพื่อเปลี่ยนกลับเป็นสถานะรออนุมัติ
           </p>
-          <div className="space-y-3">
-            {approvedRequests.map((req) => (
-              <div key={req.id} className="flex flex-col sm:flex-row justify-between items-start gap-2 p-3 border rounded-lg bg-green-50">
-                <div>
-                  <p className="font-medium text-gray-800 text-sm">
-                    {req.first_name} {req.last_name} ({req.employee_code})
-                  </p>
-                  <p className="text-xs text-gray-600">
-                    {req.leave_type_name} | {req.start_date} ถึง {req.end_date} ({req.days} วัน)
-                  </p>
-                  {req.attachment && (
-                    <a href={req.attachment} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
-                      📎 {req.attachment_name || 'ดูเอกสารแนบ'}
-                    </a>
-                  )}
-                  {req.department_name && (
-                    <p className="text-xs text-gray-400">แผนก: {req.department_name}</p>
-                  )}
-                </div>
-                <button
-                  onClick={() => handleRevoke(req.id)}
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded text-xs whitespace-nowrap"
-                >
-                  ⚠️ ยกเลิกอนุมัติ
-                </button>
-              </div>
-            ))}
+
+          {/* Filter */}
+          <div className="mb-4 flex flex-wrap gap-3 items-end bg-gray-50 rounded-lg p-3">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">ค้นหาชื่อ / รหัสพนักงาน</label>
+              <input
+                type="text"
+                value={filterName}
+                onChange={e => setFilterName(e.target.value)}
+                placeholder="ชื่อ หรือ รหัสพนักงาน"
+                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-48"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">วันลาตั้งแต่</label>
+              <input
+                type="date"
+                value={filterStartDate}
+                onChange={e => setFilterStartDate(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">ถึงวันที่</label>
+              <input
+                type="date"
+                value={filterEndDate}
+                onChange={e => setFilterEndDate(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">แผนก</label>
+              <select
+                value={filterDept}
+                onChange={e => setFilterDept(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">ทุกแผนก</option>
+                {departments.map(d => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
+            </div>
+            {(filterName || filterStartDate || filterEndDate || filterDept) && (
+              <button
+                onClick={() => { setFilterName(''); setFilterStartDate(''); setFilterEndDate(''); setFilterDept(''); }}
+                className="text-xs text-gray-500 underline mt-4"
+              >
+                ล้างตัวกรอง
+              </button>
+            )}
           </div>
+
+          {approvedRequests.length === 0 ? (
+            <p className="text-gray-500 text-center py-6">ไม่พบรายการที่อนุมัติแล้ว</p>
+          ) : (
+            <div className="space-y-3">
+              {approvedRequests.map((req) => (
+                <div key={req.id} className="flex flex-col sm:flex-row justify-between items-start gap-2 p-3 border rounded-lg bg-green-50">
+                  <div>
+                    <p className="font-medium text-gray-800 text-sm">
+                      {req.first_name} {req.last_name} ({req.employee_code})
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      {req.leave_type_name} | {req.start_date} ถึง {req.end_date} ({req.days} วัน)
+                    </p>
+                    {req.attachment && (
+                      <a href={req.attachment} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
+                        📎 {req.attachment_name || 'ดูเอกสารแนบ'}
+                      </a>
+                    )}
+                    {req.department_name && (
+                      <p className="text-xs text-gray-400">แผนก: {req.department_name}</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleRevoke(req.id)}
+                    className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded text-xs whitespace-nowrap"
+                  >
+                    ⚠️ ยกเลิกอนุมัติ
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

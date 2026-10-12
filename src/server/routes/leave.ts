@@ -465,7 +465,9 @@ router.put('/revoke/:id', (req: Request, res: Response) => {
 
 // Get recently approved leave requests (for Admin to revoke)
 router.get('/recent-approved', (req: Request, res: Response) => {
-  const requests = queryAll(`
+  const { name, start_date, end_date, department_id } = req.query;
+
+  let sql = `
     SELECT lr.*, lt.name as leave_type_name,
            e.first_name, e.last_name, e.employee_code, e.role as requester_role,
            d.name as department_name
@@ -474,9 +476,29 @@ router.get('/recent-approved', (req: Request, res: Response) => {
     JOIN employees e ON lr.employee_id = e.id
     JOIN departments d ON e.department_id = d.id
     WHERE lr.status = 'approved'
-    ORDER BY lr.approved_at DESC
-    LIMIT 20
-  `);
+  `;
+  const params: any[] = [];
+
+  if (name) {
+    sql += ` AND (e.first_name || ' ' || e.last_name LIKE ? OR e.employee_code LIKE ?)`;
+    params.push(`%${name}%`, `%${name}%`);
+  }
+  if (start_date) {
+    sql += ` AND lr.start_date >= ?`;
+    params.push(start_date);
+  }
+  if (end_date) {
+    sql += ` AND lr.end_date <= ?`;
+    params.push(end_date);
+  }
+  if (department_id) {
+    sql += ` AND e.department_id = ?`;
+    params.push(Number(department_id));
+  }
+
+  sql += ` ORDER BY lr.approved_at DESC`;
+
+  const requests = queryAll(sql, params);
   res.json(requests);
 });
 

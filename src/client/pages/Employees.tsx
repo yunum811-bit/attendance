@@ -9,6 +9,7 @@ interface EmployeeData {
   department_id: number;
   department_name: string;
   role: string;
+  start_date?: string;
 }
 
 interface Department {
@@ -28,13 +29,14 @@ export default function Employees() {
     department_id: '',
     role: 'employee',
     password: '',
+    start_date: '',
   });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [passwordModal, setPasswordModal] = useState<{ id: number; name: string } | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [editModal, setEditModal] = useState<EmployeeData | null>(null);
-  const [editForm, setEditForm] = useState({ first_name: '', last_name: '', email: '', department_id: '', role: '' });
+  const [editForm, setEditForm] = useState({ first_name: '', last_name: '', email: '', department_id: '', role: '', start_date: '' });
 
   useEffect(() => {
     fetchEmployees();
@@ -93,6 +95,7 @@ export default function Employees() {
         department_id: '',
         role: 'employee',
         password: '',
+        start_date: '',
       });
       fetchEmployees();
     } catch {
@@ -175,6 +178,7 @@ export default function Employees() {
       email: emp.email || '',
       department_id: String(emp.department_id),
       role: emp.role,
+      start_date: emp.start_date || '',
     });
   };
 
@@ -190,6 +194,7 @@ export default function Employees() {
           email: editForm.email,
           department_id: parseInt(editForm.department_id),
           role: editForm.role,
+          start_date: editForm.start_date,
         }),
       });
       const data = await res.json();
@@ -342,6 +347,15 @@ export default function Employees() {
                   <option value="md">กรรมการผู้จัดการ (MD)</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">วันที่เริ่มงาน</label>
+                <input
+                  type="date"
+                  value={editForm.start_date}
+                  onChange={(e) => setEditForm({ ...editForm, start_date: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
             </div>
             <div className="flex gap-3 justify-end">
               <button
@@ -453,6 +467,15 @@ export default function Employees() {
                 />
                 <p className="text-xs text-gray-500 mt-1">ค่าเริ่มต้น: 1234</p>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">วันที่เริ่มงาน</label>
+                <input
+                  type="date"
+                  value={form.start_date}
+                  onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
             </div>
             <button
               type="submit"
@@ -476,6 +499,7 @@ export default function Employees() {
                 <th className="px-4 py-3 text-left">อีเมล</th>
                 <th className="px-4 py-3 text-left">แผนก</th>
                 <th className="px-4 py-3 text-left">บทบาท</th>
+                <th className="px-4 py-3 text-left">วันที่เริ่มงาน</th>
                 <th className="px-4 py-3 text-center">จัดการ</th>
               </tr>
             </thead>
@@ -489,6 +513,9 @@ export default function Employees() {
                   <td className="px-4 py-3">{emp.email || '-'}</td>
                   <td className="px-4 py-3">{emp.department_name}</td>
                   <td className="px-4 py-3">{getRoleBadge(emp.role)}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    {emp.start_date ? new Date(emp.start_date).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : '-'}
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-center gap-1 flex-wrap">
                       <button

@@ -10,6 +10,7 @@ interface EmployeeData {
   department_name: string;
   role: string;
   start_date?: string;
+  is_active: number;
 }
 
 interface Department {
@@ -144,6 +145,20 @@ export default function Employees() {
         return;
       }
       setMessage(`รีเซ็ตรหัสผ่านของ ${emp.first_name} ${emp.last_name} เป็น "1234" สำเร็จ`);
+    } catch {
+      setError('เกิดข้อผิดพลาด');
+    }
+  };
+
+  const handleToggleActive = async (emp: EmployeeData) => {
+    const action = emp.is_active ? 'ปิดใช้งาน' : 'เปิดใช้งาน';
+    if (!confirm(`ยืนยัน${action}พนักงาน "${emp.first_name} ${emp.last_name}"?`)) return;
+    try {
+      const res = await fetch(`/api/employees/${emp.id}/toggle-active`, { method: 'PUT' });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error); return; }
+      setMessage(data.message);
+      fetchEmployees();
     } catch {
       setError('เกิดข้อผิดพลาด');
     }
@@ -500,12 +515,13 @@ export default function Employees() {
                 <th className="px-4 py-3 text-left">แผนก</th>
                 <th className="px-4 py-3 text-left">บทบาท</th>
                 <th className="px-4 py-3 text-left">วันที่เริ่มงาน</th>
+                <th className="px-4 py-3 text-left">สถานะ</th>
                 <th className="px-4 py-3 text-center">จัดการ</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {employees.map((emp) => (
-                <tr key={emp.id} className="hover:bg-gray-50">
+                <tr key={emp.id} className={`hover:bg-gray-50 ${!emp.is_active ? 'opacity-50 bg-gray-50' : ''}`}>
                   <td className="px-4 py-3 font-mono">{emp.employee_code}</td>
                   <td className="px-4 py-3">
                     {emp.first_name} {emp.last_name}
@@ -515,6 +531,11 @@ export default function Employees() {
                   <td className="px-4 py-3">{getRoleBadge(emp.role)}</td>
                   <td className="px-4 py-3 text-sm text-gray-600">
                     {emp.start_date ? new Date(emp.start_date).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : '-'}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${emp.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                      {emp.is_active ? 'ใช้งาน' : 'ปิดใช้งาน'}
+                    </span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-center gap-1 flex-wrap">
@@ -538,6 +559,13 @@ export default function Employees() {
                         title="รีเซ็ตเป็น 1234"
                       >
                         🔄 Reset
+                      </button>
+                      <button
+                        onClick={() => handleToggleActive(emp)}
+                        className={`px-2 py-1 rounded text-xs text-white ${emp.is_active ? 'bg-gray-500 hover:bg-gray-600' : 'bg-green-600 hover:bg-green-700'}`}
+                        title={emp.is_active ? 'ปิดใช้งาน' : 'เปิดใช้งาน'}
+                      >
+                        {emp.is_active ? '🚫 ปิดใช้งาน' : '✅ เปิดใช้งาน'}
                       </button>
                       <button
                         onClick={() => handleDeleteEmployee(emp)}

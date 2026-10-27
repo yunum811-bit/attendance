@@ -9,41 +9,36 @@ const router = Router();
 router.get('/', (req: Request, res: Response) => {
   const employees = queryAll(`
     SELECT e.id, e.employee_code, e.first_name, e.last_name, e.email, 
-           e.department_id, e.role, e.avatar, d.name as department_name
+           e.department_id, e.role, e.avatar, e.start_date, d.name as department_name
     FROM employees e
     JOIN departments d ON e.department_id = d.id
     ORDER BY e.employee_code
   `);
-
   res.json(employees);
 });
 
 // Get employees by department
 router.get('/department/:departmentId', (req: Request, res: Response) => {
   const { departmentId } = req.params;
-
   const employees = queryAll(`
     SELECT e.id, e.employee_code, e.first_name, e.last_name, e.email, 
-           e.department_id, e.role, e.avatar, d.name as department_name
+           e.department_id, e.role, e.avatar, e.start_date, d.name as department_name
     FROM employees e
     JOIN departments d ON e.department_id = d.id
     WHERE e.department_id = ?
     ORDER BY e.employee_code
   `, [Number(departmentId)]);
-
   res.json(employees);
 });
 
 // Create employee
 router.post('/', (req: Request, res: Response) => {
-  const { employee_code, first_name, last_name, email, department_id, role } = req.body;
-
+  const { employee_code, first_name, last_name, email, department_id, role, start_date } = req.body;
   try {
     const { lastId } = execute(`
-      INSERT INTO employees (employee_code, first_name, last_name, email, department_id, role)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `, [employee_code, first_name, last_name, email || '', department_id, role || 'employee']);
-
+      INSERT INTO employees (employee_code, first_name, last_name, email, department_id, role, start_date)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [employee_code, first_name, last_name, email || '', department_id, role || 'employee', start_date || '']);
     res.json({ id: lastId, message: 'เพิ่มพนักงานสำเร็จ' });
   } catch (error: any) {
     if (error.message?.includes('UNIQUE')) {
@@ -56,14 +51,12 @@ router.post('/', (req: Request, res: Response) => {
 // Update employee
 router.put('/:id', (req: Request, res: Response) => {
   const { id } = req.params;
-  const { first_name, last_name, email, department_id, role } = req.body;
-
+  const { first_name, last_name, email, department_id, role, start_date } = req.body;
   execute(`
     UPDATE employees 
-    SET first_name = ?, last_name = ?, email = ?, department_id = ?, role = ?
+    SET first_name = ?, last_name = ?, email = ?, department_id = ?, role = ?, start_date = ?
     WHERE id = ?
-  `, [first_name, last_name, email, department_id, role, Number(id)]);
-
+  `, [first_name, last_name, email, department_id, role, start_date || '', Number(id)]);
   res.json({ message: 'อัปเดตข้อมูลพนักงานสำเร็จ' });
 });
 

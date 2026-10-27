@@ -226,6 +226,21 @@ export async function initDatabase(): Promise<SqlJsDatabase> {
   try {
     db.run("ALTER TABLE employees ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1");
   } catch { /* column already exists */ }
+  // Migration: เพิ่ม leave type ลาเพื่อฌาปนกิจ ถ้ายังไม่มี
+  try {
+    const existing = db.exec("SELECT id FROM leave_types WHERE name = 'ลาเพื่อฌาปนกิจ'");
+    if (!existing.length || !existing[0].values.length) {
+      db.run("INSERT INTO leave_types (name, max_days, description) VALUES ('ลาเพื่อฌาปนกิจ', 3, 'ลาเพื่อฌาปนกิจศพ')");
+    }
+  } catch { /* ignore */ }
+  // Migration: อัปเดต ลาคลอด เป็น 120 วัน
+  try {
+    db.run("UPDATE leave_types SET max_days = 120 WHERE name = 'ลาคลอด' AND max_days < 120");
+  } catch { /* ignore */ }
+  // Migration: อัปเดต ลาพักร้อน default เป็น 6 วัน (ปีแรก)
+  try {
+    db.run("UPDATE leave_types SET max_days = 6, description = 'ลาพักร้อนประจำปี (คำนวณตามอายุงาน)' WHERE name = 'ลาพักร้อน'");
+  } catch { /* ignore */ }
 
   // Seed default data
   const [{ values: [[deptCount]] }] = db.exec('SELECT COUNT(*) FROM departments');
@@ -245,8 +260,9 @@ export async function initDatabase(): Promise<SqlJsDatabase> {
 
     db.run("INSERT INTO leave_types (name, max_days, description) VALUES ('ลาป่วย', 30, 'ลาป่วยตามกฎหมายแรงงาน')");
     db.run("INSERT INTO leave_types (name, max_days, description) VALUES ('ลากิจ', 5, 'ลากิจส่วนตัว')");
-    db.run("INSERT INTO leave_types (name, max_days, description) VALUES ('ลาพักร้อน', 10, 'ลาพักร้อนประจำปี')");
-    db.run("INSERT INTO leave_types (name, max_days, description) VALUES ('ลาคลอด', 98, 'ลาคลอดบุตร')");
+    db.run("INSERT INTO leave_types (name, max_days, description) VALUES ('ลาพักร้อน', 6, 'ลาพักร้อนประจำปี (คำนวณตามอายุงาน)')");
+    db.run("INSERT INTO leave_types (name, max_days, description) VALUES ('ลาคลอด', 120, 'ลาคลอดบุตร')");
+    db.run("INSERT INTO leave_types (name, max_days, description) VALUES ('ลาเพื่อฌาปนกิจ', 3, 'ลาเพื่อฌาปนกิจศพ')");
 
     db.run("INSERT INTO employees (employee_code, first_name, last_name, email, department_id, role, password) VALUES ('EMP001', 'สมชาย', 'ใจดี', 'somchai@company.com', 1, 'admin', '1234')");
     db.run("INSERT INTO employees (employee_code, first_name, last_name, email, department_id, role, password) VALUES ('EMP002', 'สมหญิง', 'รักงาน', 'somying@company.com', 2, 'manager', '1234')");

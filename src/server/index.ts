@@ -23,6 +23,7 @@ import holidayRoutes from './routes/holiday';
 import forgotCheckinRoutes from './routes/forgotCheckin';
 import apiKeyRoutes, { verifyApiKey } from './routes/apiKey';
 import workLogRoutes from './routes/workLog';
+import leaveCarryoverRoutes from './routes/leaveCarryover';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '4000');
@@ -62,6 +63,7 @@ app.use('/api/forgot-checkin', forgotCheckinRoutes);
 // Admin: จัดการ API Keys
 app.use('/api/admin/api-keys', apiKeyRoutes);
 app.use('/api/work-logs', workLogRoutes);
+app.use('/api/leave-carryover', leaveCarryoverRoutes);
 
 // External API with API Key (สำหรับ automation / โปรแกรมภายนอก)
 const LEGACY_API_KEY = process.env.API_KEY; // รองรับ key เดิมจาก .env

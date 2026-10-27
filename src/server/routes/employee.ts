@@ -9,10 +9,11 @@ const router = Router();
 router.get('/', (req: Request, res: Response) => {
   const employees = queryAll(`
     SELECT e.id, e.employee_code, e.first_name, e.last_name, e.email, 
-           e.department_id, e.role, e.avatar, e.start_date, d.name as department_name
+           e.department_id, e.role, e.avatar, e.start_date, e.is_active,
+           d.name as department_name
     FROM employees e
     JOIN departments d ON e.department_id = d.id
-    ORDER BY e.employee_code
+    ORDER BY e.is_active DESC, e.employee_code
   `);
   res.json(employees);
 });
@@ -22,10 +23,11 @@ router.get('/department/:departmentId', (req: Request, res: Response) => {
   const { departmentId } = req.params;
   const employees = queryAll(`
     SELECT e.id, e.employee_code, e.first_name, e.last_name, e.email, 
-           e.department_id, e.role, e.avatar, e.start_date, d.name as department_name
+           e.department_id, e.role, e.avatar, e.start_date, e.is_active,
+           d.name as department_name
     FROM employees e
     JOIN departments d ON e.department_id = d.id
-    WHERE e.department_id = ?
+    WHERE e.department_id = ? AND e.is_active = 1
     ORDER BY e.employee_code
   `, [Number(departmentId)]);
   res.json(employees);
@@ -160,6 +162,23 @@ router.delete('/:id/avatar', (req: Request, res: Response) => {
 
   execute("UPDATE employees SET avatar = '' WHERE id = ?", [Number(id)]);
   res.json({ message: 'ลบรูปโปรไฟล์สำเร็จ' });
+});
+
+// Toggle active/inactive employee
+router.put('/:id/toggle-active', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const emp = queryOne('SELECT is_active, first_name, last_name FROM employees WHERE id = ?', [Number(id)]);
+  if (!emp) return res.status(404).json({ error: 'ไม่พบพนักงาน' });
+
+  const newStatus = emp.is_active ? 0 : 1;
+  execute('UPDATE employees SET is_active = ? WHERE id = ?', [newStatus, Number(id)]);
+
+  res.json({
+    message: newStatus === 0
+      ? `ปิดใช้งาน ${emp.first_name} ${emp.last_name} แล้ว`
+      : `เปิดใช้งาน ${emp.first_name} ${emp.last_name} แล้ว`,
+    is_active: newStatus,
+  });
 });
 
 // Delete employee

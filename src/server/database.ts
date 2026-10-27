@@ -218,6 +218,10 @@ export async function initDatabase(): Promise<SqlJsDatabase> {
   try {
     db.run("ALTER TABLE leave_requests ADD COLUMN attachment_name TEXT DEFAULT ''");
   } catch { /* column already exists */ }
+  // Migration: เพิ่ม column start_date ใน employees ถ้ายังไม่มี
+  try {
+    db.run("ALTER TABLE employees ADD COLUMN start_date TEXT DEFAULT ''");
+  } catch { /* column already exists */ }
 
   // Seed default data
   const [{ values: [[deptCount]] }] = db.exec('SELECT COUNT(*) FROM departments');
